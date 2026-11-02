@@ -1,0 +1,1657 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Samah Wellness</title>
+
+<style>
+  body {
+    margin: 0;
+    background-color: #F5F0E7;
+    color: #2B2B29;
+    font-family: Arial, sans-serif;
+  }
+
+  h1 {
+    font-size: 52px;
+    font-weight: 400;
+    text-align: center;
+    margin-top: 180px;
+  }
+
+  p {
+    font-size: 18px;
+    text-align: center;
+    color: #565E47;
+  }
+
+
+p {
+  font-size: 18px;
+  text-align: center;
+  color: #565E47;
+}
+
+
+.menu {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 7%;
+  background: #F5F0E7;
+  border-bottom: 1px solid #D5D6C9;
+}
+
+.logo {
+  font-size: 28px;
+  letter-spacing: 4px;
+  color: #565E47;
+}
+
+.logo span {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 5px;
+  text-align: center;
+}
+
+nav {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
+nav a {
+  text-decoration: none;
+  color: #565E47;
+  font-size: 14px;
+}
+
+.contacto {
+  background: #565E47;
+  color: white;
+  padding: 12px 22px;
+  border-radius: 30px;
+}
+
+@media (max-width: 600px) {
+  .menu {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  nav {
+    gap: 15px;
+  }
+}
+
+
+
+.logo img {
+  width: 130px;
+  height: auto;
+  display: block;
+}
+
+.portada {
+  position: relative;
+  min-height: 85vh;
+  background-image: url("portada-samah.png");
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.capa-oscura {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.30);
+}
+
+.contenido-portada {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 30px;
+}
+
+.contenido-portada h1 {
+  color: white;
+  font-size: clamp(34px, 5vw, 64px);
+  font-weight: 400;
+  margin: 0;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+
+.contenido-portada p {
+  color: white;
+  letter-spacing: 3px;
+  margin: 25px 0 40px;
+}
+
+.boton-portada {
+  display: inline-block;
+  background: #F5F0E7;
+  color: #565E47;
+  padding: 15px 30px;
+  border-radius: 30px;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.boton-portada:hover {
+  background: #D5D6C9;
+}
+
+@media (max-width: 600px) {
+  .portada {
+    min-height: 75vh;
+  }
+
+  .contenido-portada p {
+    font-size: 13px;
+    letter-spacing: 1px;
+  }
+}
+
+.seccion-clases {
+  padding: 90px 7%;
+  background: #F5F0E7;
+  text-align: center;
+}
+
+.seccion-clases h2 {
+  font-size: 42px;
+  font-weight: 400;
+  margin: 0 0 15px;
+}
+
+.intro-clases {
+  margin-bottom: 45px;
+}
+
+.contenedor-clases {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.tarjeta-clase {
+  background: #FFFFFF;
+  border-radius: 12px;
+  overflow: hidden;
+  padding-bottom: 25px;
+}
+
+.foto-clase {
+  height: 230px;
+  background: #D5D6C9;
+}
+
+.tarjeta-clase h3 {
+  font-size: 19px;
+  font-weight: 400;
+  margin: 24px 10px;
+}
+
+.tarjeta-clase details {
+  padding: 0 18px;
+}
+
+.tarjeta-clase summary {
+  display: inline-block;
+  cursor: pointer;
+  background: #565E47;
+  color: white;
+  padding: 12px 22px;
+  border-radius: 30px;
+  font-size: 14px;
+  list-style: none;
+}
+
+.tarjeta-clase summary::-webkit-details-marker {
+  display: none;
+}
+
+.tarjeta-clase details p {
+  font-size: 14px;
+  line-height: 1.7;
+  margin-top: 20px;
+  color: #565E47;
+}
+
+@media (max-width: 900px) {
+  .contenedor-clases {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 500px) {
+  .contenedor-clases {
+    grid-template-columns: 1fr;
+  }
+
+  .seccion-clases h2 {
+    font-size: 34px;
+  }
+}
+
+
+.seccion-horarios {
+  background-image:
+    linear-gradient(
+      rgba(20, 25, 18, 0.45),
+      rgba(20, 25, 18, 0.45)
+    ),
+    url("fondo-horarios.jpg");
+
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  padding: 110px 7%;
+  text-align: center;
+  color: #FFFFFF;
+  min-height: 650px;
+}
+
+.seccion-horarios h2,
+.seccion-horarios > p {
+  color: #FFFFFF;
+}
+
+.seccion-horarios .dias-semana button {
+  border-color: #FFFFFF;
+  color: #FFFFFF;
+}
+
+.seccion-horarios .dias-semana button.activo,
+.seccion-horarios .dias-semana button:hover {
+  background: #F5F0E7;
+  color: #565E47;
+}
+
+.seccion-horarios .lista-horarios {
+  background: rgba(245, 240, 231, 0.94);
+  color: #2B2B29;
+}
+
+
+.dias-semana {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 40px 0;
+}
+
+.dias-semana button {
+  background: transparent;
+  border: 1px solid white;
+  color: white;
+  padding: 12px 18px;
+  border-radius: 30px;
+  cursor: pointer;
+}
+
+.dias-semana button.activo,
+.dias-semana button:hover {
+  background: #F5F0E7;
+  color: #565E47;
+}
+
+.lista-horarios {
+  background: rgba(245, 240, 231, 0.94);
+  color: #2B2B29;
+  max-width: 650px;
+  margin: 0 auto;
+  padding: 30px;
+  border-radius: 14px;
+  box-sizing: border-box;
+}
+
+.fila-horario {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 15px 0;
+  border-bottom: 1px solid #D5D6C9;
+  text-align: left;
+}
+
+.fila-horario:last-child {
+  border-bottom: none;
+}
+
+.hora {
+  color: #565E47;
+  font-weight: bold;
+}
+
+
+
+.seccion-experiencias {
+  background: #F5F0E7;
+  padding: 100px 7%;
+  text-align: center;
+}
+
+.seccion-experiencias h2 {
+  font-size: 42px;
+  font-weight: 400;
+  margin: 0 0 20px;
+}
+
+.seccion-experiencias > p {
+  color: #565E47;
+  margin-bottom: 55px;
+}
+
+.galeria-experiencias {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 25px;
+  max-width: 1100px;
+  margin: auto;
+}
+
+.experiencia {
+  text-align: left;
+}
+
+.foto-experiencia {
+  height: 330px;
+  background: #D7D8CB;
+  border-radius: 12px;
+}
+
+.experiencia h3 {
+  font-size: 20px;
+  font-weight: 400;
+  margin-top: 15px;
+}
+
+.instagram-experiencias {
+  margin: 80px auto 0;
+  max-width: 700px;
+}
+
+.instagram-experiencias h3 {
+  font-size: 28px;
+  font-weight: 400;
+}
+
+.instagram-experiencias p {
+  margin: 20px 0 30px;
+}
+
+.instagram-experiencias a {
+  display: inline-block;
+  background: #565E47;
+  color: white;
+  padding: 15px 30px;
+  border-radius: 30px;
+  text-decoration: none;
+}
+
+@media (max-width: 600px) {
+  .galeria-experiencias {
+    grid-template-columns: 1fr;
+  }
+
+  .seccion-experiencias h2 {
+    font-size: 32px;
+  }
+
+  .foto-experiencia {
+    height: 280px;
+  }
+}
+
+.foto-experiencia {
+  position: relative;
+  overflow: hidden;
+}
+
+.medio-galeria {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  animation: aparecer 0.8s ease-in-out;
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.foto-experiencia {
+    position: relative;
+    overflow: hidden;
+}
+
+.flecha-galeria {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(245, 240, 231, 0.85);
+    color: #565E47;
+    border: none;
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    cursor: pointer;
+    font-size: 20px;
+    z-index: 10;
+    transition: 0.3s;
+    opacity: 0;
+}
+
+.flecha-galeria:hover {
+    background: #F5F0E7;
+}
+
+.flecha-galeria.anterior {
+    left: 15px;
+}
+
+.flecha-galeria.siguiente {
+    right: 15px;
+}
+
+
+.foto-experiencia:hover .flecha-galeria,
+.foto-experiencia:focus-within .flecha-galeria {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .flecha-galeria {
+    opacity: 1;
+  }
+}
+
+.seccion-cafe {
+  background: #E9E9DF;
+  padding: 100px 7%;
+}
+
+.contenedor-cafe {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 70px;
+  align-items: center;
+  max-width: 1200px;
+  margin: auto;
+}
+
+.foto-cafe {
+background-image: url("foto-cafe.jpg");
+background-size: cover;
+background-position: center;
+
+  width: 100%;
+  min-height: 480px;
+ background-color: #D5D6C9;
+  border-radius: 14px;
+}
+
+.contenido-cafe {
+  text-align: left;
+}
+
+.subtitulo-cafe {
+  color: #565E47;
+  font-size: 12px;
+  letter-spacing: 3px;
+}
+
+.contenido-cafe h2 {
+  font-size: 52px;
+  font-weight: 400;
+  margin: 20px 0;
+}
+
+.contenido-cafe p {
+  text-align: left;
+  line-height: 1.8;
+  margin-bottom: 20px;
+}
+
+.frase-cafe {
+  font-size: 22px;
+}
+
+.menu-cafe {
+  margin-top: 30px;
+}
+
+.menu-cafe summary {
+  display: inline-block;
+  background: #565E47;
+  color: white;
+  padding: 15px 30px;
+  border-radius: 30px;
+  cursor: pointer;
+  font-size: 14px;
+  list-style: none;
+}
+
+.menu-cafe summary::-webkit-details-marker {
+  display: none;
+}
+
+.lista-cafe {
+  margin-top: 25px;
+  padding: 25px;
+  background: #F5F0E7;
+  border-radius: 12px;
+}
+
+.lista-cafe h3 {
+  color: #565E47;
+  font-size: 19px;
+  font-weight: 400;
+  margin-top: 20px;
+}
+
+@media (max-width: 800px) {
+  .contenedor-cafe {
+    grid-template-columns: 1fr;
+    gap: 35px;
+  }
+
+  .foto-cafe {
+    min-height: 320px;
+  }
+
+  .contenido-cafe h2 {
+    font-size: 38px;
+  }
+}
+
+
+
+.seccion-privados {
+  background: #F5F0E7;
+  padding: 100px 7%;
+}
+
+.contenedor-privados {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 70px;
+  align-items: center;
+  max-width: 1200px;
+  margin: auto;
+}
+
+.contenido-privados {
+  text-align: left;
+}
+
+.subtitulo-privados {
+  color: #565E47;
+  font-size: 12px;
+  letter-spacing: 3px;
+}
+
+.contenido-privados h2 {
+  font-size: 48px;
+  font-weight: 400;
+  margin: 20px 0;
+}
+
+.contenido-privados p {
+  text-align: left;
+  line-height: 1.8;
+  margin-bottom: 20px;
+}
+
+
+.foto-privados {
+  width: 100%;
+  height: 480px;
+  background-color: #D5D6C9;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.video-privados {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+@media (max-width: 800px) {
+  .foto-privados {
+    height: 320px;
+    min-height: 0;
+  }
+
+
+  .contenido-privados h2 {
+    font-size: 36px;
+  }
+
+  .foto-privados {
+    min-height: 320px;
+  }
+}
+
+.boton-privados {
+  display: inline-block;
+  background-color: #565E47;
+  color: white;
+  padding: 15px 30px;
+  border-radius: 30px;
+  text-decoration: none;
+  margin-top: 15px;
+  font-size: 14px;
+}
+
+.boton-privados:hover {
+  background-color: #747D63;
+  color: white;
+}
+
+
+.seccion-contacto {
+  background: #F5F0E7;
+  padding: 100px 7%;
+  text-align: center;
+}
+
+.seccion-contacto h2 {
+  font-size: 48px;
+  font-weight: 400;
+  margin-bottom: 15px;
+}
+
+.datos-contacto {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+  max-width: 1100px;
+  margin: 65px auto;
+}
+
+.datos-contacto h3 {
+  font-size: 20px;
+  font-weight: 400;
+}
+
+.datos-contacto p {
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.enlace-contacto {
+  color: #565E47;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+
+.boton-reserva {
+  display: inline-block;
+  background: #565E47;
+  color: white;
+  padding: 16px 35px;
+  border-radius: 30px;
+  text-decoration: none;
+}
+
+.boton-reserva:hover {
+  background: #747D63;
+}
+
+@media (max-width: 700px) {
+  .datos-contacto {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+
+  .seccion-contacto h2 {
+    font-size: 36px;
+  }
+}
+
+.boton-menu-cafe {
+  display: inline-block;
+  background: #565E47;
+  color: white;
+  padding: 15px 30px;
+  border-radius: 30px;
+  text-decoration: none;
+  font-size: 14px;
+  margin-top: 30px;
+}
+
+.boton-menu-cafe:hover {
+  background: #747D63;
+  color: white;
+}
+
+/* MENÚ SAMAH */
+
+.seccion-menu {
+  background-image:
+    linear-gradient(
+      rgba(0, 0, 0, 0.35),
+      rgba(0, 0, 0, 0.35)
+    ),
+    url("fondo-cafe.jpg");
+
+  background-size: cover;
+  background-position: center;
+  padding: 100px 7%;
+  text-align: center;
+  color: white;
+}
+
+.contenido-menu {
+  max-width: 1100px;
+  margin: auto;
+}
+
+.seccion-menu h2 {
+  color: white;
+  font-size: 46px;
+  font-weight: 400;
+  margin: 0 0 20px;
+}
+
+.contenido-menu > p {
+  color: white;
+  font-size: 18px;
+  margin-bottom: 45px;
+}
+
+.tarjeta-menu {
+  background: rgba(245, 240, 231, 0.94);
+  color: #2B2B29;
+  border-radius: 18px;
+  padding: 40px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 50px;
+  text-align: left;
+}
+
+.columna-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 35px;
+}
+
+.bloque-menu h3 {
+  color: #565E47;
+  font-size: 24px;
+  font-weight: 400;
+  margin: 0 0 15px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #D5D6C9;
+}
+
+.fila-menu {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 10px 0;
+  border-bottom: 1px solid #DEDCD3;
+  font-size: 16px;
+}
+
+.fila-menu span:last-child {
+  white-space: nowrap;
+  font-weight: 600;
+  color: #565E47;
+}
+
+.fila-menu small {
+  display: block;
+  font-size: 13px;
+  color: #777568;
+  margin-top: 5px;
+}
+
+.encabezado-precios {
+  color: #565E47;
+  font-size: 13px;
+}
+
+@media (max-width: 800px) {
+  .seccion-menu {
+    padding: 70px 5%;
+  }
+
+  .tarjeta-menu {
+    grid-template-columns: 1fr;
+    padding: 25px 20px;
+    gap: 30px;
+  }
+
+  .seccion-menu h2 {
+    font-size: 34px;
+  }
+
+  .bloque-menu h3 {
+    font-size: 22px;
+  }
+
+  .fila-menu {
+    font-size: 14px;
+  }
+}
+
+/* EVENTOS PRIVADOS - VERSIÓN CELULAR */
+
+@media (max-width: 800px) {
+
+  .contenedor-privados {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 35px;
+  }
+
+  .contenido-privados {
+    width: 100%;
+    text-align: left;
+  }
+
+  .contenido-privados h2 {
+    font-size: 36px;
+    line-height: 1.2;
+  }
+
+  .contenido-privados p {
+    font-size: 16px;
+    line-height: 1.7;
+  }
+
+  .foto-privados {
+    width: 100%;
+    height: 360px;
+    min-height: 0;
+  }
+
+  .video-privados {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+}
+
+.foto-clase {
+  overflow: hidden;
+}
+
+.foto-clase img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+</style>
+
+</head>
+
+<body>
+
+  <header class="menu">
+    
+<div class="logo">
+  <img src="samah celeste.png" alt="Samah Wellness">
+</div>
+
+
+    <nav>
+      <a href="#clases">Clases</a>
+      <a href="#horarios">Horarios</a>
+      <a href="#contacto" class="contacto">Contacto</a>
+    </nav>
+  </header>
+
+  
+<main class="portada">
+
+  <div class="capa-oscura"></div>
+
+  <div class="contenido-portada">
+    <h1>Un espacio para conectar contigo</h1>
+    <p>YOGA · PILATES · BIENESTAR · COMUNIDAD</p>
+
+    <a href="#clases" class="boton-portada">
+      Descubre Samah
+    </a>
+  </div>
+
+</main>
+
+
+  
+<section id="clases" class="seccion-clases">
+
+  <h2>Encuentra tu práctica</h2>
+  <p class="intro-clases">
+    Cada cuerpo, cada mente y cada camino
+    son diferentes.
+  </p>
+
+  <div class="contenedor-clases">
+
+    <article class="tarjeta-clase">
+      
+<div class="foto-clase">
+  <img src="fotos-clases/hatha.jpg" alt="Hatha Yoga en Samah">
+</div>
+
+      <h3>Hatha Yoga</h3>
+      <details>
+        <summary>Conoce más</summary>
+        <p>
+          Una práctica tradicional que integra
+          posturas, respiración y meditación.
+          Ideal para cultivar equilibrio,
+          conciencia corporal y calma.
+        </p>
+      </details>
+    </article>
+
+    <article class="tarjeta-clase">
+      <div class="foto-clase">
+  <img src="fotos-clases/ashtanga.jpg" alt="Ashtanga Yoga en Samah">
+</div>
+      <h3>Ashtanga Yoga</h3>
+      <details>
+        <summary>Conoce más</summary>
+        <p>
+          Una práctica dinámica que sigue
+          una secuencia estructurada de posturas,
+          coordinando respiración y movimiento.
+          Desarrolla fuerza, flexibilidad
+          y concentración.
+        </p>
+      </details>
+    </article>
+
+    <article class="tarjeta-clase">
+      <div class="foto-clase"></div>
+      <h3>Pilates Full Body</h3>
+      <details>
+        <summary>Conoce más</summary>
+        <p>
+          Una clase enfocada en fortalecer
+          todo el cuerpo, mejorar la postura,
+          la estabilidad y el control
+          a través del movimiento.
+        </p>
+      </details>
+    </article>
+
+    <article class="tarjeta-clase">
+      
+<div class="foto-clase">
+  <img src="fotos-clases/restaurativo.jpg" alt="Yoga Restaurativo en Samah">
+</div>
+
+      <h3>Yoga Restaurativo</h3>
+      <details>
+        <summary>Conoce más</summary>
+        <p>
+          Una práctica suave con posturas
+          sostenidas y apoyos que favorecen
+          la relajación profunda y el descanso.
+        </p>
+      </details>
+    </article>
+
+<article class="tarjeta-clase">
+  
+<div class="foto-clase">
+  <img src="fotos-clases/vinyasa.jpg" alt="Vinyasa Yoga en Samah">
+</div>
+
+
+  <h3>Vinyasa Yoga</h3>
+
+  <details>
+    <summary>Conoce más</summary>
+    <p>
+      Una práctica fluida y dinámica que conecta
+      la respiración con el movimiento.
+
+      A través de secuencias creativas de posturas,
+      desarrolla fuerza, movilidad, equilibrio
+      y concentración.
+
+      Ideal para quienes disfrutan del movimiento
+      consciente y buscan una práctica energética
+      y adaptable a diferentes niveles.
+    </p>
+  </details>
+</article>
+
+<article class="tarjeta-clase">
+
+  <div class="foto-clase"></div>
+
+  <h3>Sculpt</h3>
+
+  <details>
+    <summary>Conoce más</summary>
+    <p>
+      Una clase dinámica que combina ejercicios
+      de fuerza, resistencia y movimientos
+      controlados para trabajar todo el cuerpo.
+
+      Ideal para quienes buscan fortalecer
+      sus músculos, mejorar su condición física
+      y disfrutar de una práctica energética.
+    </p>
+  </details>
+
+</article>
+
+
+  </div>
+
+</section>
+
+<section class="seccion-experiencias" id="experiencias">
+  <h2>Momentos que se viven en Samah</h2>
+  <p>Más que clases, creamos experiencias para conectar, compartir y disfrutar el presente.</p>
+
+  <div class="galeria-experiencias">
+    <div class="experiencia">
+      <div class="foto-experiencia"></div>
+      <h3>Clases temáticas</h3>
+    </div>
+
+    <div class="experiencia">
+      <div class="foto-experiencia"></div>
+      <h3>Talleres creativos</h3>
+    </div>
+
+    <div class="experiencia">
+      <div class="foto-experiencia"></div>
+      <h3>Encuentros especiales</h3>
+    </div>
+
+    <div class="experiencia">
+      <div class="foto-experiencia"></div>
+      <h3>Celebraciones en Samah</h3>
+    </div>
+  </div>
+
+  <div class="instagram-experiencias">
+    <h3>Siempre hay algo nuevo por vivir.</h3>
+    <p>Descubre nuestros próximos talleres, dinámicas y eventos especiales en Instagram.</p>
+  
+<a href="https://www.instagram.com/samah_wellness/"
+   target="_blank"
+   rel="noopener noreferrer">
+  Síguenos en Instagram
+</a>
+
+  </div>
+</section>
+
+
+<section id="cafe" class="seccion-cafe">
+
+  <div class="contenedor-cafe">
+
+    <div class="foto-cafe"></div>
+
+    <div class="contenido-cafe">
+
+      <span class="subtitulo-cafe">
+        UN RINCÓN PARA DISFRUTAR
+      </span>
+
+      <h2>Samah Café</h2>
+
+      <p class="frase-cafe">
+        Porque el bienestar también se disfruta
+        a pequeños sorbos.
+      </p>
+
+      <p>
+        Matcha, café, tés, bebidas especiales
+        y algo dulce para acompañar tu momento.
+      </p>
+
+      
+<a href="#menu-samah" class="boton-menu-cafe">
+  Conoce nuestro menú
+</a>
+
+
+    </div>
+
+  </div>
+
+</section>
+
+<section id="menu-samah" class="seccion-menu">
+
+  <div class="contenido-menu">
+
+    <h2>Menú Samah</h2>
+    <p>Un momento para disfrutar, un sabor para recordar.</p>
+
+    <div class="tarjeta-menu">
+
+      <!-- COLUMNA IZQUIERDA -->
+      <div class="columna-menu">
+
+        <div class="bloque-menu">
+          <h3>Hot Drinks</h3>
+
+          <div class="fila-menu encabezado-precios">
+            <span></span>
+            <span>M &nbsp;&nbsp;&nbsp; G</span>
+          </div>
+
+          <div class="fila-menu">
+            <span>Cappuccino</span>
+            <span>45 / 50</span>
+          </div>
+
+          <div class="fila-menu">
+            <span>Americano</span>
+            <span>30 / 35</span>
+          </div>
+
+          <div class="fila-menu">
+            <span>Latte</span>
+            <span>45 / 50</span>
+          </div>
+
+          <div class="fila-menu">
+            <span>Espresso</span>
+            <span>30 / —</span>
+          </div>
+        </div>
+
+        <div class="bloque-menu">
+          <h3>Other Drinks</h3>
+
+          <div class="fila-menu encabezado-precios">
+            <span></span>
+            <span>M &nbsp;&nbsp;&nbsp; G</span>
+          </div>
+
+          <div class="fila-menu">
+            <span>Matcha Latte</span>
+            <span>45 / 50</span>
+          </div>
+
+          <div class="fila-menu">
+            <span>Chai Latte</span>
+            <span>45 / 50</span>
+          </div>
+
+          <div class="fila-menu">
+            <span>Cacao</span>
+            <span>40 / 45</span>
+          </div>
+
+          <div class="fila-menu">
+            <span>Tisana</span>
+            <span>40 / 45</span>
+          </div>
+
+          <div class="fila-menu">
+            <span>Té</span>
+            <span>20 / 25</span>
+          </div>
+        </div>
+
+        <div class="bloque-menu">
+          <h3>Postres</h3>
+
+          <div class="fila-menu">
+            <span>Muffin</span>
+            <span>25</span>
+          </div>
+
+          <div class="fila-menu">
+            <span>Galleta</span>
+            <span>15</span>
+          </div>
+
+          <div class="fila-menu">
+            <span>Brownie Vegano</span>
+            <span>30</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- COLUMNA DERECHA -->
+      <div class="columna-menu">
+
+        <div class="bloque-menu">
+          <h3>Iced Drinks</h3>
+
+          <div class="fila-menu">
+            <span>Iced Latte</span>
+            <span>50</span>
+          </div>
+
+          <div class="fila-menu">
+            <span>Iced Taro</span>
+            <span>50</span>
+          </div>
+
+          <div class="fila-menu">
+            <span>Iced Chai Latte</span>
+            <span>50</span>
+          </div>
+
+          <div class="fila-menu">
+            <span>Iced Matcha Latte</span>
+            <span>50</span>
+          </div>
+        </div>
+
+        <div class="bloque-menu">
+          <h3>Shakes Proteicos</h3>
+
+          <div class="fila-menu">
+            <span>
+              Frutos Rojos
+              <small>(22 gr proteína)</small>
+            </span>
+            <span>70</span>
+          </div>
+        </div>
+
+        <div class="bloque-menu">
+          <h3>Comida</h3>
+
+          <div class="fila-menu">
+            <span>
+              Croissant
+              <small>(Jamón y queso)</small>
+            </span>
+            <span>35</span>
+          </div>
+
+          <div class="fila-menu">
+            <span>Chilaquiles</span>
+            <span>50</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+
+<section id="eventos-privados" class="seccion-privados">
+
+  <div class="contenedor-privados">
+
+    <div class="contenido-privados">
+
+      <span class="subtitulo-privados">
+        ENCUENTROS ESPECIALES
+      </span>
+
+      <h2>Haz de Samah tu espacio</h2>
+
+      <p>
+        Un lugar para celebrar, crear y compartir
+        momentos especiales.
+      </p>
+
+      <p>
+        Cumpleaños, picnics, talleres, reuniones
+        íntimas y experiencias personalizadas.
+      </p>
+
+      
+<a
+  href="https://wa.me/525512202573?text=Hola%2C%20me%20gustar%C3%ADa%20cotizar%20un%20evento%20privado%20en%20Samah."
+  class="boton-privados"
+  target="_blank"
+  rel="noopener noreferrer"
+>
+  Cotiza tu evento
+</a>
+
+
+    </div>
+
+    
+<div class="foto-privados">
+  <video
+    autoplay
+    muted
+    loop
+    playsinline
+    preload="metadata"
+    class="video-privados"
+  >
+    <source src="eventos-privados.mp4" type="video/mp4">
+  </video>
+</div>
+
+
+  </div>
+
+</section>
+
+  
+<section id="contacto" class="seccion-contacto">
+
+  <h2>Visítanos</h2>
+
+  <p>
+    Tu espacio para conectar está más cerca
+    de lo que imaginas.
+  </p>
+
+  <div class="datos-contacto">
+
+    <div>
+      <h3>Ubicación</h3>
+      <p>Naucalpan, Estado de México</p>
+      
+<a
+  href="https://www.google.com/maps/place/Samah+Wellness/@19.4796357,-99.2545277,711m/data=!3m2!1e3!4b1!4m6!3m5!1s0x85d203001e45e381:0x53c1fc211459bba2!8m2!3d19.4796357!4d-99.2519528!16s%2Fg%2F11y_2m3cz2"
+  target="_blank"
+  rel="noopener noreferrer"
+  class="enlace-contacto"
+>
+  Cómo llegar
+</a>
+
+    </div>
+
+    <div>
+      <h3>Instagram</h3>
+      <p>Descubre nuestra comunidad y eventos.</p>
+      <a href="https://www.instagram.com/samah_wellness"
+         target="_blank"
+         rel="noopener noreferrer"
+         class="enlace-contacto">
+        Visita nuestro Instagram
+      </a>
+    </div>
+
+    <div>
+      <h3>WhatsApp</h3>
+      <p>55 1220 2573</p>
+      <a href="https://wa.me/525512202573"
+         target="_blank"
+         rel="noopener noreferrer"
+         class="enlace-contacto">
+        Escríbenos
+      </a>
+    </div>
+
+  </div>
+
+  <a
+    href="https://wa.me/525512202573?text=Hola%2C%20me%20gustar%C3%ADa%20reservar%20una%20clase%20en%20Samah."
+    target="_blank"
+    rel="noopener noreferrer"
+    class="boton-reserva"
+  >
+    Reserva tu clase
+  </a>
+
+</section>
+
+
+<section id="horarios" class="seccion-horarios">
+
+  <h2>Horarios Samah</h2>
+  <p>Encuentra un momento para ti.</p>
+
+  <div class="dias-semana">
+    <button onclick="mostrarDia('lunes', this)">Lunes</button>
+    <button onclick="mostrarDia('martes', this)" class="activo">Martes</button>
+    <button onclick="mostrarDia('miercoles', this)">Miércoles</button>
+    <button onclick="mostrarDia('jueves', this)">Jueves</button>
+    <button onclick="mostrarDia('viernes', this)">Viernes</button>
+    <button onclick="mostrarDia('sabado', this)">Sábado</button>
+    <button onclick="mostrarDia('domingo', this)">Domingo</button>
+  </div>
+
+  <div id="lista-horarios" class="lista-horarios"></div>
+
+  <p>Horarios sujetos a cambios.</p>
+
+</section>
+
+<script>
+const horarios = {
+  
+lunes: [
+  ["6:00 PM", "Yoga Restaurativo"],
+  ["8:00 PM", "Vinyasa Yoga"]
+],
+
+
+  martes: [
+    ["8:00 AM", "Pilates Full Body"],
+    ["9:30 AM", "Pilates Full Body"],
+    ["10:30 AM", "Pilates Full Body"],
+    ["8:00 PM", "Pilates Full Body"]
+  ],
+
+  miercoles: [
+    ["8:00 AM", "Pilates Full Body"],
+    ["9:30 AM", "Pilates Full Body"],
+    ["10:30 AM", "Pilates Full Body"],
+    ["6:00 PM", "Pilates Full Body"],
+    ["7:00 PM", "Pilates Full Body"],
+    ["8:00 PM", "Pilates Full Body"]
+  ],
+
+  jueves: [
+    ["8:00 AM", "Yoga Restaurativo"],
+    ["9:30 AM", "Pilates Full Body"],
+    ["10:30 AM", "Pilates Full Body"],
+    ["5:00 PM", "Pilates Full Body"],
+    ["6:00 PM", "Pilates Full Body"],
+    ["7:00 PM", "Ashtanga Yoga"],
+    ["8:00 PM", "Pilates Full Body"]
+  ],
+
+ 
+viernes: [
+  ["8:00 AM", "Yoga Restaurativo"],
+  ["7:00 PM", "Pilates Full Body"]
+],
+
+  
+sabado: [
+  ["7:00 AM", "Vinyasa Yoga"],
+  ["8:00 AM", "Vinyasa Yoga"],
+  ["9:15 AM", "Pilates Full Body"],
+  ["10:15 AM", "Sculpt"]
+],
+
+  domingo: []
+};
+
+function mostrarDia(dia, boton) {
+  const contenedor = document.getElementById("lista-horarios");
+
+  document.querySelectorAll(".dias-semana button")
+    .forEach(b => b.classList.remove("activo"));
+
+  boton.classList.add("activo");
+  contenedor.innerHTML = "";
+
+  if (horarios[dia].length === 0) {
+    const mensaje = document.createElement("p");
+    mensaje.textContent = dia === "domingo"
+      ? "Domingo de experiencias y eventos especiales. Consulta nuestras próximas actividades."
+      : "Horario por confirmar.";
+    contenedor.appendChild(mensaje);
+    return;
+  }
+
+  horarios[dia].forEach(clase => {
+    const fila = document.createElement("div");
+    fila.className = "fila-horario";
+
+    const hora = document.createElement("span");
+    hora.className = "hora";
+    hora.textContent = clase[0];
+
+    const nombre = document.createElement("span");
+    nombre.textContent = clase[1];
+
+    fila.appendChild(hora);
+    fila.appendChild(nombre);
+    contenedor.appendChild(fila);
+  });
+}
+
+mostrarDia(
+  "martes",
+  document.querySelector(".dias-semana button.activo")
+);
+</script>
+
+<script>
+const galerias = {
+    "clases-tematicas": [
+        "galeria/clases-tematicas/prueba.jpg",
+        "galeria/clases-tematicas/prueba2.jpg"
+    ],
+ 
+"talleres": [
+  "galeria/talleres/creabonito.jpg",
+  "galeria/talleres/macrame.jpg",
+  "galeria/talleres/talleres.jpg"
+],
+
+  
+"encuentros": [
+  "galeria/encuentros/kirtan.jpg",
+  "galeria/encuentros/soundhealing.jpg",
+  "galeria/encuentros/yoganocturno.jpg"
+],
+
+ 
+"celebraciones": [
+  "galeria/celebraciones/nocturno.jpg",
+  "galeria/celebraciones/picnic.png"
+]
+
+};
+
+function iniciarGaleria(contenedor, archivos) {
+  if (!contenedor || archivos.length === 0) return;
+
+  let indice = 0;
+  let temporizador;
+
+  function mostrarArchivo() {
+    clearTimeout(temporizador);
+    contenedor.innerHTML = "";
+
+    const archivo = archivos[indice];
+    const esVideo = /\.(mp4|webm)$/i.test(archivo);
+
+    const elemento = document.createElement(
+      esVideo ? "video" : "img"
+    );
+
+    elemento.src = archivo;
+    elemento.className = "medio-galeria";
+
+    if (esVideo) {
+      elemento.autoplay = true;
+      elemento.muted = true;
+      elemento.playsInline = true;
+      elemento.onended = siguiente;
+      elemento.onerror = siguiente;
+    } else {
+      elemento.alt = "Experiencias en Samah";
+      elemento.onload = () => {
+        temporizador = setTimeout(siguiente, 5000);
+      };
+      elemento.onerror = siguiente;
+    }
+
+    contenedor.appendChild(elemento);
+    const flechaAnterior = document.createElement("button");
+flechaAnterior.innerHTML = "&#10094;";
+flechaAnterior.className = "flecha-galeria anterior";
+
+const flechaSiguiente = document.createElement("button");
+flechaSiguiente.innerHTML = "&#10095;";
+flechaSiguiente.className = "flecha-galeria siguiente";
+
+flechaAnterior.onclick = (e) => {
+    e.stopPropagation();
+    anterior();
+};
+
+flechaSiguiente.onclick = (e) => {
+    e.stopPropagation();
+    siguiente();
+};
+
+contenedor.appendChild(flechaAnterior);
+contenedor.appendChild(flechaSiguiente);
+  }
+
+  function siguiente() {
+    clearTimeout(temporizador);
+    indice = (indice + 1) % archivos.length;
+    mostrarArchivo();
+  }
+
+ function anterior() {
+    clearTimeout(temporizador);
+    indice = (indice - 1 + archivos.length) % archivos.length;
+    mostrarArchivo();
+}
+
+mostrarArchivo();
+}
+
+document.querySelectorAll(".foto-experiencia").forEach(
+  (contenedor, indice) => {
+    const categorias = Object.keys(galerias);
+    iniciarGaleria(contenedor, galerias[categorias[indice]]);
+  }
+);
+</script>
+
+</body>
+
+</html>
