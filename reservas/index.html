@@ -9,22 +9,16 @@
 </style>
 </head>
 <body>
-<header><div><div class="brand">Samah</div><small>Wellness studio</small></div><button id="mine">Mis reservas</button><button id="desk">Recepción</button></header>
+<header><div><div class="brand">Samah</div><small>Wellness studio</small></div><button id="mine">Mis reservas</button></header>
 <main>
 <section class="hero"><small>Samah Wellness · Agenda de clases</small><h1>Un espacio<br>para moverte.</h1><p>Yoga, Pilates y Sculpt. Elige tu clase y reserva tu lugar.</p></section>
-<p class="note">Modo demo · Cancela con al menos 2 horas de anticipación. Usa datos ficticios. Las reservas solo se guardan en este navegador.</p>
+<p class="note">Cancela con al menos 2 horas de anticipación. Tu nombre y contacto se usan para gestionar la reserva.</p><p id="connection" role="status"></p>
 <section aria-labelledby="agenda"><div class="row"><h2 id="agenda">Agenda semanal</h2><span class="pill">10 lugares por clase</span></div>
 <div class="week"><button id="prev" aria-label="Semana anterior">←</button><strong id="range"></strong><button id="next" aria-label="Semana siguiente">→</button></div>
 <div id="days" class="days" aria-label="Días de la semana"></div>
 <label>Disciplina <select id="filter"><option>Todas</option><option>Yoga</option><option>Pilates</option><option>Sculpt</option></select></label>
 <div id="classes"></div></section>
-<section id="admin" hidden aria-labelledby="deskTitle">
-<h2 id="deskTitle" tabindex="-1">Recepción</h2><p class="note">Panel de prueba sin inicio de sesión. La lista corresponde al día seleccionado en la agenda.</p>
-<div id="roster"></div>
-<h2>Editar horario semanal</h2><p>Los cambios se aplican a la agenda recurrente. Los registros ya confirmados conservan su fecha y hora originales.</p>
-<div id="schedule"></div>
-<form id="edit"><label>Día <select name="day" id="editDay"></select></label><label>Clase <select name="type" id="editType"></select></label><label>Hora de inicio <input type="time" name="time" required></label><label>Hora de fin (opcional) <input type="time" name="end"></label><button class="primary">Guardar horario</button> <button type="button" id="resetEdit">Limpiar</button><p id="editStatus" role="status"></p></form>
-</section>
+
 </main>
 <footer><small>Samah Wellness · Hora de Ciudad de México</small></footer>
 <dialog id="modal" aria-labelledby="modalTitle">
@@ -36,27 +30,40 @@ const $ = id => document.getElementById(id);
 const weekdays = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
 const access = ['Paquete Samah','Clase suelta','Fitpass','Totalpass','Wellhub'];
 const capacity = 10;
-const key = 'samah-reservas-demo-v2';
-const classNames = ['Yoga Restaurativo','Yoga Vinyasa','Yoga Ashtanga','Pilates Full Body','Sculpt'];
-const [restaurativo,vinyasa,ashtanga,pilates,sculpt] = classNames;
-const base = [
-  [['18:00',restaurativo],['20:00',vinyasa]],
-  [['09:30',pilates],['10:00',vinyasa,'11:00'],['17:00',pilates],['18:00',pilates],['19:00',ashtanga],['20:00',vinyasa]],
-  [['08:00',pilates],['09:30',pilates],['10:30',pilates],['18:00',pilates],['19:00',pilates],['20:00',pilates]],
-  [['08:00',restaurativo],['09:30',pilates],['10:30',vinyasa],['17:00',pilates],['18:00',pilates],['19:00',ashtanga],['20:00',pilates]],
-  [['08:00',restaurativo],['19:00',pilates]],
-  [['07:00',vinyasa],['08:00',vinyasa],['09:15',pilates],['10:15',sculpt]]
-].flatMap((slots,day)=>slots.map(([time,type,end=''],i)=>({id:'slot-'+day+'-'+i,day,time,type,end})));
-const discipline = cls => cls.type.split(' ')[0];
-const timeLabel = cls => cls.end ? cls.time+'–'+cls.end : cls.time;
-function load(){
-  return JSON.parse(localStorage.getItem(key)) || {schedule:base, bookings:[]};
+const endpoint='https://idbcuvhyhilqeglzkywt.supabase.co';
+const apiKey='sb_publishable_YHDLKcV5pd31_V5s940uVA_vnIQqCso';
+const key='samah-reservas-live-v1';
+const classNames=['Yoga Restaurativo','Yoga Vinyasa','Yoga Ashtanga','Pilates Full Body','Sculpt'];
+const discipline=c=>c.type.split(' ')[0];
+const timeLabel=c=>c.end?c.time+'–'+c.end:c.time;
+const data={schedule:[],bookings:[]};
+let revision=0;
+try{data.bookings=JSON.parse(localStorage.getItem(key))||[];}catch{}
+function saveMine(){try{localStorage.setItem(key,JSON.stringify(data.bookings));}catch{}}
+async function request(path,body,token=''){
+  const headers={apikey:apiKey,'Content-Type':'application/json'};
+  if(token)headers.Authorization='Bearer '+token;
+  const response=await fetch(endpoint+path,{method:'POST',headers,body:JSON.stringify(body)});
+  const raw=await response.text();
+  const payload=raw?JSON.parse(raw):null;
+  if(!response.ok)throw Error(payload?.message||payload?.msg||'No se pudo conectar.');
+  return payload;
 }
-let data;
-try {data=load();} catch {data={schedule:base,bookings:[]};}
-function save(updated){
-  try {localStorage.setItem(key,JSON.stringify(updated));data=updated;return true;}
-  catch {alert('El navegador no pudo guardar los cambios. Revisa si permite almacenamiento local.');return false;}
+const rpc=(name,params,token)=>request('/rest/v1/rpc/samah_'+name,params,token);
+const fromServer=row=>({...row,time:row.starts.slice(0,5),end:row.ends?.slice(0,5)||''});
+async function refresh(){
+  const version=++revision,date=selected;
+  data.schedule=[];render();
+  $('connection').textContent='Consultando cupos…';
+  try{
+    const rows=await rpc('agenda',{p_date:date});
+    if(version!==revision)return;
+    data.schedule=rows.map(row=>({...fromServer(row),day:weekday(date)}));
+    $('connection').textContent='';
+    render();
+  }catch{
+    if(version===revision)$('connection').textContent='No pudimos actualizar la agenda. Recarga la página e inténtalo de nuevo.';
+  }
 }
 const zone = 'America/Mexico_City';
 function today(){return new Intl.DateTimeFormat('sv-SE',{timeZone:zone}).format(new Date());}
@@ -72,8 +79,6 @@ function pretty(date, options){
 const shortDate = date => pretty(date,{day:'numeric',month:'short'});
 let selected=today(), monday=shift(selected,-weekday(selected)), editing=null;
 const esc = value => String(value).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const uid = () => globalThis.crypto?.randomUUID?.() ?? Date.now().toString(36)+Math.random().toString(36).slice(2);
-const active = (cls,date) => data.bookings.filter(b=>!b.cancelled && b.date===date && b.slot===cls.id && b.time===cls.time && b.type===cls.type);
 function started(cls,date){
   const now=new Intl.DateTimeFormat('en-GB',{timeZone:zone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date());
   return date<today() || (date===today() && cls.time<=now);
@@ -86,18 +91,17 @@ function render(){
   }).join('');
   const list=data.schedule.filter(c=>c.day===weekday(selected) && ($('filter').value==='Todas'||discipline(c)===$('filter').value)).sort((a,b)=>a.time.localeCompare(b.time));
   $('classes').innerHTML='<h3>'+pretty(selected,{weekday:'long',day:'numeric',month:'long'})+'</h3>'+ (list.map(c=>{
-    const available=capacity-active(c,selected).length;
-    const closed=started(c,selected);
+    const available=c.available;
+    const closed=started(c,selected)||selected>shift(today(),60);
     return '<article class="card"><strong class="time">'+timeLabel(c)+'</strong><div class="details"><h3><span class="pill '+discipline(c)+'">'+c.type+'</span></h3><span>'+ (closed?'Horario concluido':available+' de 10 disponibles')+'</span></div><button class="primary" data-book="'+c.id+'" '+(closed||!available?'disabled':'')+'>'+ (closed?'Cerrada':available?'Reservar':'Sin cupo')+'</button></article>';
   }).join('') || '<p>No hay clases para esta selección.</p>');
-  if(!$('admin').hidden) renderDesk();
 }
-function move(delta){monday=shift(monday,delta);selected=shift(selected,delta);render();}
+function move(delta){monday=shift(monday,delta);selected=shift(selected,delta);refresh();}
 $('prev').onclick=()=>move(-7);
 $('next').onclick=()=>move(7);
 $('days').onclick=e=>{
   const btn=e.target.closest('[data-date]');
-  if(btn){selected=btn.dataset.date;render();$('days').querySelector('[aria-pressed=true]').focus();}
+  if(btn){selected=btn.dataset.date;refresh();$('days').querySelector('[aria-pressed=true]').focus();}
 };
 $('filter').onchange=render;
 function show(title,body){
@@ -109,23 +113,28 @@ $('close').onclick=()=>$('modal').close();
 $('classes').onclick=e=>{
   if(!e.target.dataset.book)return;
   const cls=data.schedule.find(c=>c.id===e.target.dataset.book),date=selected;
-  show('Reserva tu clase','<p>'+cls.type+' · '+shortDate(date)+' · '+timeLabel(cls)+'</p><form id="reserve"><label>Nombre <input name="person" required maxlength="80" placeholder="Ej. Ana Demo"></label><label>Correo o teléfono <input name="contact" required maxlength="120" placeholder="Ej. ana@example.com"></label><label>Tipo de acceso <select name="access">'+access.map(a=>'<option>'+a+'</option>').join('')+'</select></label><p>Usa datos ficticios para esta prueba.</p><button class="primary">Confirmar reserva</button><p id="reserveStatus" role="status"></p></form>');
-  $('reserve').onsubmit=event=>{
+  show('Reserva tu clase','<p>'+cls.type+' · '+shortDate(date)+' · '+timeLabel(cls)+'</p><form id="reserve"><label>Nombre <input name="person" required maxlength="80" placeholder="Ej. Ana Demo"></label><label>Correo o teléfono <input name="contact" required maxlength="120" placeholder="Ej. ana@example.com"></label><label>Tipo de acceso <select name="access">'+access.map(a=>'<option>'+a+'</option>').join('')+'</select></label><p>Las cancelaciones se permiten hasta 2 horas antes de clase.</p><button class="primary">Confirmar reserva</button><p id="reserveStatus" role="status"></p></form>');
+  $('reserve').onsubmit=async event=>{
     event.preventDefault();
     const values=new FormData(event.currentTarget);
     const person=values.get('person').trim(),contact=values.get('contact').trim();
     if(!person || !(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact)||/^\+?[\d ()-]{7,25}$/.test(contact)&&contact.replace(/\D/g,'').length>=7)){
       $('reserveStatus').textContent='Escribe un nombre y un correo o teléfono válido.';return;
     }
-    try{data=load();}catch{}
-    const current=data.schedule.find(c=>c.id===cls.id);
-    if(!current||current.time!==cls.time||current.end!==cls.end||current.type!==cls.type||current.day!==cls.day||started(cls,date)||active(cls,date).length>=capacity){
-      show('Horario no disponible','<p>Vuelve a la agenda para elegir otra clase.</p>');render();return;
+    const submit=event.currentTarget.querySelector('button');
+    submit.disabled=true;
+    try{
+      const [{id,cancel_token}]=await rpc('reserve',{p_slot:cls.id,p_date:date,p_person:person,p_contact:contact,p_access:values.get('access')});
+      const booking={id,cancel_token,type:cls.type,time:cls.time,end:cls.end,date,access:values.get('access')};
+      data.bookings.push(booking);saveMine();
+      show('Reserva confirmada','<p>'+cls.type+' · '+shortDate(date)+' · '+timeLabel(cls)+'</p><p>Folio <strong>'+esc(id.slice(-8).toUpperCase())+'</strong></p><p>Puedes cancelar desde Mis reservas en este navegador.</p><button class="primary" id="viewMine">Ver mis reservas</button>');
+      refresh();
+    }catch(error){
+      $('reserveStatus').textContent=error.message;
+      submit.disabled=false;
+      refresh();
+      return;
     }
-    const booking={id:uid(),slot:cls.id,type:cls.type,time:cls.time,end:cls.end,date,person,contact,access:values.get('access')};
-    if(!save({...data,bookings:[...data.bookings,booking]}))return;
-    render();
-    show('Reserva confirmada','<p>'+cls.type+' · '+shortDate(date)+' · '+timeLabel(cls)+'</p><p>Folio demo <strong>'+esc(booking.id.slice(-8).toUpperCase())+'</strong></p><p>Tu lugar quedó registrado en este navegador.</p><button class="primary" id="viewMine">Ver mis reservas</button>');
     $('viewMine').onclick=showMine;
   };
 };
@@ -134,72 +143,29 @@ function canCancel(b){
   const now=Date.parse(today()+'T'+parts+'Z');
   return Date.parse(b.date+'T'+b.time+':00Z')-now>=7200000;
 }
-function bookingCard(b,desk=false){
-  return '<article class="card"><div class="details"><strong>'+esc(b.person)+'</strong><br>'+b.type+' · '+shortDate(b.date)+' · '+timeLabel(b)+'<br><span>'+b.access+(desk?' · '+esc(b.contact):'')+'</span></div>'+ (b.cancelled?'<span>Cancelada</span>':!canCancel(b)?'<span>Fuera del plazo</span>':'<button data-cancel="'+b.id+'">Cancelar</button>')+'</article>';
+function bookingCard(b){
+  return '<article class="card"><div class="details"><strong>'+esc(b.person||"Mi reserva")+'</strong><br>'+b.type+' · '+shortDate(b.date)+' · '+timeLabel(b)+'<br><span>'+b.access+'</span></div>'+ (b.cancelled?'<span>Cancelada</span>':!canCancel(b)?'<span>Fuera del plazo</span>':'<button data-cancel="'+b.id+'">Cancelar</button>')+'</article>';
 }
 function showMine(){
   show('Mis reservas',data.bookings.slice().reverse().map(b=>bookingCard(b)).join('')||'<p>Aún no hay reservas en este navegador.</p>');
 }
 $('mine').onclick=showMine;
-function cancel(event,desk){
+async function cancel(event){
   const id=event.target.dataset.cancel;
   if(!id||!confirm('¿Cancelar esta reserva y liberar el lugar?'))return;
-  try{data=load();}catch{}
-  const booking=data.bookings.find(b=>b.id===id && !b.cancelled);
-  if(!booking || !canCancel(booking)){alert('Puedes cancelar hasta 2 horas antes del inicio.');return;}
-  if(save({...data,bookings:data.bookings.map(b=>b.id===id?{...b,cancelled:true}:b)})){
-    render();if(!desk)showMine();
-  }
+  event.target.disabled=true;
+  const local=data.bookings.find(b=>b.id===id);
+  try{
+    const ok=await rpc('cancel',{p_id:id,p_token:local?.cancel_token});
+    if(!ok){alert('La reserva ya fue cancelada o está fuera del plazo de dos horas.');return;}
+    if(local){local.cancelled=true;saveMine();}
+    showMine();
+    refresh();
+  }catch{alert('No se pudo cancelar. Intenta de nuevo.');}
+  finally{event.target.disabled=false;}
 }
-$('modalBody').onclick=e=>cancel(e,false);
-$('roster').onclick=e=>cancel(e,true);
-$('desk').onclick=()=>{
-  $('admin').hidden=!$('admin').hidden;
-  $('desk').setAttribute('aria-expanded',String(!$('admin').hidden));
-  if(!$('admin').hidden){renderDesk();$('deskTitle').focus();}
-};
-$('desk').setAttribute('aria-controls','admin');
-$('desk').setAttribute('aria-expanded','false');
-$('editType').innerHTML=classNames.map(name=>'<option>'+name+'</option>').join('');
-$('editDay').innerHTML=weekdays.map((day,i)=>'<option value="'+i+'">'+day+'</option>').join('');
-function renderDesk(){
-  const list=data.bookings.filter(b=>b.date===selected).sort((a,b)=>a.time.localeCompare(b.time));
-  $('roster').innerHTML='<h3>'+shortDate(selected)+' · '+list.filter(b=>!b.cancelled).length+' activas</h3>'+(list.map(b=>bookingCard(b,true)).join('')||'<p>No hay reservas para este día.</p>');
-  $('schedule').innerHTML=data.schedule.slice().sort((a,b)=>a.day-b.day||a.time.localeCompare(b.time)).map(c=>
-    '<article class="card"><div>'+weekdays[c.day]+' · '+timeLabel(c)+' · '+c.type+'</div><button data-edit="'+c.id+'">Editar</button></article>').join('');
-}
-$('schedule').onclick=e=>{
-  const cls=data.schedule.find(c=>c.id===e.target.dataset.edit);
-  if(!cls)return;
-  editing=cls.id;
-  const fields=$('edit').elements;
-  fields.day.value=cls.day;fields.type.value=cls.type;fields.time.value=cls.time;fields.end.value=cls.end;
-  $('editStatus').textContent='Editando '+weekdays[cls.day]+' · '+cls.type+' · '+cls.time;
-  fields.day.focus();
-};
-function resetEdit(){
-  editing=null;$('edit').reset();$('editStatus').textContent='';
-}
-$('resetEdit').onclick=resetEdit;
-$('edit').onsubmit=e=>{
-  e.preventDefault();
-  const form=new FormData(e.currentTarget);
-  const cls={id:editing||uid(),day:Number(form.get('day')),type:form.get('type'),time:form.get('time'),end:form.get('end')};
-  if(cls.end && cls.end<=cls.time){
-    $('editStatus').textContent='La hora de fin debe ser posterior a la de inicio.';return;
-  }
-  try{data=load();}catch{}
-  if(data.schedule.some(c=>c.id!==cls.id&&c.day===cls.day&&c.time===cls.time&&c.type===cls.type)){
-    $('editStatus').textContent='Ya existe esa clase en este horario.';return;
-  }
-  if(editing && data.bookings.some(b=>!b.cancelled && b.slot===editing && !started(b,b.date))){
-    $('editStatus').textContent='Este horario tiene reservas futuras activas. Gestiona esas reservas antes de editarlo.';return;
-  }
-  const schedule=editing?data.schedule.map(c=>c.id===editing?cls:c):[...data.schedule,cls];
-  if(save({...data,schedule})){resetEdit();$('editStatus').textContent='Horario guardado.';render();}
-};
-addEventListener('storage',e=>{if(e.key===key){try{data=load();render();}catch{}}});
-render();
+$('modalBody').onclick=cancel;
+refresh();
 </script>
 </body>
 </html>
