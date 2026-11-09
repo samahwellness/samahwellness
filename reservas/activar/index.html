@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es-MX"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Activar Recepción · Samah</title>
+<style>body{background:#f8f5ee;color:#322c25;font:16px system-ui;margin:0}main{max-width:440px;margin:10vh auto;padding:24px}h1{font-family:Georgia;font-weight:normal}label,input{display:block}input,button{box-sizing:border-box;font:inherit;padding:12px;border:1px solid #b8ad9e;border-radius:8px}input{width:100%;margin:6px 0 16px}button{background:#454e3d;color:white}</style>
+<main><p>Samah Wellness</p><h1>Activar Recepción</h1><p id="status" role="status"></p><form hidden><label>Nueva contraseña<input name="password" type="password" minlength="12" autocomplete="new-password" required></label><button>Guardar contraseña</button></form></main>
+<script>
+const auth=new URLSearchParams(location.hash.slice(1));
+const token=auth.get('access_token');
+const allowed=['invite','recovery'].includes(auth.get('type'));
+history.replaceState(null,'',location.pathname);
+const form=document.querySelector('form');
+const status=document.querySelector('#status');
+if(token&&allowed&&!auth.has('error'))form.hidden=false;
+else status.textContent='Abre el enlace más reciente de activación o recuperación enviado a tu correo.';
+form.onsubmit=async event=>{
+  event.preventDefault();
+  const button=form.querySelector('button');
+  button.disabled=true;
+  status.textContent='Guardando…';
+  try{
+    const result=await fetch('https://idbcuvhyhilqeglzkywt.supabase.co/auth/v1/user',{
+      method:'PUT',
+      headers:{apikey:'sb_publishable_YHDLKcV5pd31_V5s940uVA_vnIQqCso',Authorization:'Bearer '+token,'Content-Type':'application/json'},
+      body:JSON.stringify({password:form.elements.password.value})
+    });
+    if(result.status===401||result.status===403){
+      form.reset();form.hidden=true;status.textContent='La sesión del enlace ya no está activa. Pide un enlace nuevo.';return;
+    }
+    if(!result.ok){status.textContent='Supabase no pudo guardar esa contraseña. Prueba con una frase larga y única.';return;}
+    form.reset();form.hidden=true;status.textContent='Contraseña guardada. Ya puedes cerrar esta pestaña.';
+  }catch{status.textContent='No se pudo conectar con Supabase. Intenta de nuevo.';}
+  finally{button.disabled=false;}
+};
+</script></html>
