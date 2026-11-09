@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es-MX"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Recepción · Samah Wellness</title>
+<style>body{margin:0;background:#f8f5ee;color:#322c25;font:16px system-ui}main{max-width:660px;margin:auto;padding:24px}img{width:115px}h1{font:38px Georgia}label{display:block;margin:12px 0}input,button{font:inherit;padding:10px;border:1px solid #b8ad9e;border-radius:8px}label input{display:block;margin-top:4px}button{background:#454e3d;color:white}li{padding:12px;background:#fffdf7;margin:6px 0;border-radius:8px}ul{padding:0;list-style:none}</style></head>
+<body><main><a href="../"><img src="../samah%20celeste.png" alt="Samah Wellness · Inicio"></a><h1>Recepción</h1><p id="status" role="status"></p>
+<form id="login" hidden><label>Correo <input type="email" name="email" autocomplete="username" required></label><label>Contraseña <input type="password" name="password" autocomplete="current-password" required></label><button>Entrar</button></form>
+<section id="panel" hidden><label>Fecha de la clase <input id="day" type="date" required></label><button id="refresh">Actualizar lista</button> <button id="logout">Cerrar sesión</button><ul id="roster"></ul></section></main>
+<script>
+const endpoint='https://idbcuvhyhilqeglzkywt.supabase.co';
+const apikey='sb_publishable_YHDLKcV5pd31_V5s940uVA_vnIQqCso';
+const key='samah-recepcion-session';
+const $=id=>document.getElementById(id);
+let session=null, generation=0, renewing=null;
+try{session=JSON.parse(localStorage.getItem(key));}catch{}
+$('day').value=new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Mexico_City'}).format(new Date());
+async function request(path,body,token){
+  const headers={apikey,'Content-Type':'application/json'};
+  if(token)headers.Authorization='Bearer '+token;
+  const r=await fetch(endpoint+path,{method:'POST',headers,body:JSON.stringify(body)});
+  if(!r.ok)throw Object.assign(Error('Solicitud rechazada'),{status:r.status});
+  return r.status===204?null:r.json();
+}
+function remember(value){
+  session=value;
+  try{if(value)localStorage.setItem(key,JSON.stringify(value));else localStorage.removeItem(key);}catch{}
+}
+function showLogin(message){
+  ++generation;remember(null);$('panel').hidden=true;$('roster').replaceChildren();
+  $('login').hidden=false;$('status').textContent=message;
+}
+async function access(){
+  if(session.expires_at>Date.now()/1000+60)return session.access_token;
+  const previous=session;
+  renewing??=request('/auth/v1/token?grant_type=refresh_token',{refresh_token:previous.refresh_token})
+    .then(value=>{if(session===previous)remember(value);return value;}).finally(()=>{renewing=null;});
+  return (await renewing).access_token;
+}
+async function refresh(){
+  if(!session||!$('day').value)return;
+  const version=++generation;
+  $('roster').replaceChildren();$('status').textContent='Cargando reservas…';
+  try{
+    const token=await access();
+    const rows=await request('/rest/v1/rpc/samah_roster',{p_date:$('day').value},token);
+    if(version!==generation)return;
+    const active=rows.filter(row=>!row.cancelled);
+    for(const row of active){
+      const li=document.createElement('li');
+      li.textContent=row.starts.slice(0,5)+' · '+row.type+' · '+row.person;
+      $('roster').append(li);
+    }
+    $('login').hidden=true;$('panel').hidden=false;
+    $('status').textContent=active.length?active.length+' reservas activas':'Sin reservas activas para este día.';
+  }catch(error){
+    if(version!==generation)return;
+    if([400,401,403].includes(error.status))showLogin('Inicia sesión con una cuenta autorizada de Samah.');
+    else{$('panel').hidden=false;$('status').textContent='No se pudo cargar la lista. Intenta actualizar.';}
+  }
+}
+$('login').onsubmit=async event=>{
+  event.preventDefault();
+  const form=event.currentTarget,fields=new FormData(form),button=form.querySelector('button');
+  button.disabled=true;
+  try{
+    const value=await request('/auth/v1/token?grant_type=password',{email:fields.get('email'),password:fields.get('password')});
+    if(!await request('/rest/v1/rpc/samah_is_staff',{},value.access_token))throw Error();
+    remember(value);form.reset();await refresh();
+  }catch{$('status').textContent='Revisa el correo, la contraseña y el permiso de Recepción.';}
+  finally{button.disabled=false;}
+};
+$('day').onchange=refresh;
+$('refresh').onclick=refresh;
+$('logout').onclick=()=>{
+  const token=session?.access_token;
+  showLogin('Sesión cerrada.');
+  if(token)request('/auth/v1/logout?scope=local',{},token).catch(()=>{});
+};
+if(session)refresh();else $('login').hidden=false;
+</script></body></html>
