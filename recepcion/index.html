@@ -3,7 +3,7 @@
 <style>body{margin:0;background:#f8f5ee;color:#322c25;font:16px system-ui}main{max-width:660px;margin:auto;padding:24px}img{width:115px}h1{font:38px Georgia}label{display:block;margin:12px 0}input,button{font:inherit;padding:10px;border:1px solid #b8ad9e;border-radius:8px}label input{display:block;margin-top:4px}button{background:#454e3d;color:white}li{padding:12px;background:#fffdf7;margin:6px 0;border-radius:8px}ul{padding:0;list-style:none}.access{display:inline-block;margin-left:10px;padding:3px 8px;border-radius:20px;background:#e4e9da;color:#333c2b;font-size:13px}</style></head>
 <body><main><a href="../"><img src="../samah%20celeste.png" alt="Samah Wellness · Inicio"></a><h1>Recepción</h1><p id="status" role="status"></p>
 <form id="login" hidden><label>Correo <input type="email" name="email" autocomplete="username" required></label><label>Contraseña <input type="password" name="password" autocomplete="current-password" required></label><button>Entrar</button></form>
-<section id="panel" hidden><label>Fecha de la clase <input id="day" type="date" required></label><button id="refresh">Actualizar lista</button> <button id="logout">Cerrar sesión</button><ul id="roster"></ul></section></main>
+<section id="panel" hidden><label>Fecha de la clase <input id="day" type="date" required></label><button id="refresh">Actualizar lista</button> <button id="logout">Cerrar sesión</button><ul id="roster"></ul><section aria-labelledby="fitpass-title"><h2 id="fitpass-title">Revisar CSV de Fitpass</h2><p>Compara las reservas activas del CSV con las de Samah. La vista previa no guarda ni cancela reservas.</p><label>Archivo CSV <input id="fitpass-file" type="file" accept=".csv,text/csv"></label><p id="fitpass-status" role="status"></p><ul id="fitpass-preview"></ul></section></section></main>
 <script>
 const endpoint='https://idbcuvhyhilqeglzkywt.supabase.co';
 const apikey='sb_publishable_YHDLKcV5pd31_V5s940uVA_vnIQqCso';
@@ -24,7 +24,7 @@ function remember(value){
   try{if(value)localStorage.setItem(key,JSON.stringify(value));else localStorage.removeItem(key);}catch{}
 }
 function showLogin(message){
-  ++generation;remember(null);$('panel').hidden=true;$('roster').replaceChildren();
+  ++generation;clearFitpass();remember(null);$('panel').hidden=true;$('roster').replaceChildren();
   $('login').hidden=false;$('status').textContent=message;
 }
 async function access(){
@@ -80,5 +80,77 @@ $('logout').onclick=()=>{
   showLogin('Sesión cerrada.');
   if(token)request('/auth/v1/logout?scope=local',{},token).catch(()=>{});
 };
+
+function fitpassRows(csv){
+  const rows=[];
+  csv=csv.replace(/^\uFEFF/,'').replace(/(?:\r?\n)+$/,'');
+  const pattern=/(?:^|,|\r?\n)("(?:[^"]|"")*"|[^",\r\n]*)(?=,|\r?\n|$)/gy;
+  let offset=0,row=[];
+  while(offset<csv.length){
+    pattern.lastIndex=offset;
+    const match=pattern.exec(csv);
+    if(!match)throw Error('El formato del CSV no es válido.');
+    if(offset&&csv[offset]!==','){rows.push(row);row=[];}
+    const value=match[1];
+    row.push(value.startsWith('"')?value.slice(1,-1).replaceAll('""','"'):value);
+    offset=pattern.lastIndex;
+  }
+  rows.push(row);
+  const headers=rows.shift();
+  const columns=['id','nombre','apellido','clase','fecha_hora_clase','estatus'];
+  const indexes=columns.map(name=>headers.indexOf(name));
+  if(indexes.includes(-1))throw Error('Selecciona el CSV de reservaciones de Fitpass.');
+  const byId=new Map();
+  for(const [index,fields] of rows.entries()){
+    const [id,first,last,type,starts,status]=indexes.map(i=>fields[i]?.trim());
+    if(fields.length!==headers.length||!id||!type||!status||
+       !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/.test(starts)||
+       !Number.isFinite(Date.parse(starts)))throw Error('Revisa la fila '+(index+2)+' del CSV.');
+    const booking={person:[first,last].filter(Boolean).join(' '),type,starts,status};
+    if(byId.has(id)&&JSON.stringify(byId.get(id))!==JSON.stringify(booking))
+      throw Error('Hay datos contradictorios para una misma reserva en el CSV.');
+    byId.set(id,booking);
+  }
+  return [...byId.values()];
+}
+const normalizeName=value=>(value??'').normalize('NFD').replace(/\p{M}/gu,'').trim().replace(/\s+/g,' ').toLowerCase();
+let fitpassVersion=0;
+function clearFitpass(){
+  ++fitpassVersion;
+  $('fitpass-file').value='';
+  $('fitpass-preview').replaceChildren();
+  $('fitpass-status').textContent='';
+}
+$('fitpass-file').onchange=async event=>{
+  const version=++fitpassVersion;
+  const file=event.currentTarget.files[0];
+  const preview=$('fitpass-preview'),status=$('fitpass-status');
+  preview.replaceChildren();
+  if(!file){status.textContent='';return;}
+  status.textContent='Leyendo el CSV…';
+  try{
+    const active=fitpassRows(await file.text()).filter(row=>row.status==='reserved');
+    const token=await access();
+    const dates=new Map();
+    for(const row of active){
+      const date=row.starts.slice(0,10),time=row.starts.slice(11,16);
+      if(!dates.has(date))dates.set(date,await request('/rest/v1/rpc/samah_roster',{p_date:date},token));
+      if(version!==fitpassVersion)return;
+      const matches=dates.get(date).filter(item=>!item.cancelled&&item.starts.slice(0,5)===time&&
+        normalizeName(item.access)==='fitpass'&&normalizeName(item.person)===normalizeName(row.person)&&row.person);
+      const li=document.createElement('li');
+      const result=matches.length===1?'Posible coincidencia en Samah ('+matches[0].type+')':
+        matches.length>1?'Varias coincidencias · revisar':'Sin coincidencia automática · revisar';
+      li.textContent=date+' · '+time+' · '+row.type+' · '+row.person+' · '+result;
+      preview.append(li);
+    }
+    if(version===fitpassVersion)status.textContent=active.length+' reservas activas en el CSV. Vista previa sin cambios en la agenda.';
+  }catch(error){
+    if(version!==fitpassVersion)return;
+    preview.replaceChildren();
+    status.textContent=error.status?'No se pudo consultar la lista de Samah. Revisa tu sesión e inténtalo de nuevo.':error.message;
+  }
+};
+
 if(session)refresh();else $('login').hidden=false;
 </script></body></html>
