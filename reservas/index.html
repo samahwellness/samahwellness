@@ -6,10 +6,11 @@
 <title>Reservas · Samah Wellness</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f8f5ee;color:#322c25;font:16px system-ui,sans-serif}header,main,footer{max-width:940px;margin:auto;padding:20px clamp(16px,4vw,40px)}header,.row,.week,.card,.days{display:flex;align-items:center;gap:10px}header,.row,.week,.card{justify-content:space-between}.row{flex-wrap:wrap}.brand{font:30px Georgia}.caps,small{letter-spacing:.12em;font-size:11px;text-transform:uppercase}.hero{position:relative;overflow:hidden;background:#e9dfcf;border-radius:22px;padding:clamp(24px,6vw,64px);isolation:isolate}.hero:after{content:"";position:absolute;z-index:-1;width:330px;height:330px;right:-75px;top:-60px;border-radius:50%;background:repeating-radial-gradient(circle,#cbb69c 0 1px,transparent 2px 11px);opacity:.65;mask-image:linear-gradient(120deg,transparent,#000)}h1,h2,h3{font-family:Georgia;font-weight:normal}h1{font-size:clamp(44px,8vw,80px);line-height:.98;margin:16px 0}h2{font-size:32px;margin-bottom:10px}h3{margin:0;font-size:23px}p{line-height:1.55}.note{padding:12px 16px;background:#efe9dc;border-radius:10px;font-size:14px}button,input,select{font:inherit;border-radius:9px;border:1px solid #b8ad9e;padding:10px;color:inherit;background:#fffdf7;min-height:44px}button{cursor:pointer}button.primary,button[aria-pressed=true]{background:#454e3d;color:#fff;border-color:#454e3d}button:disabled{opacity:.58;cursor:default}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #a66a48;outline-offset:2px}.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin:14px 0}.days button{padding:6px 0}.days strong{display:block;font-size:18px}.card{background:#fffdf7;border:1px solid #e2d8ca;padding:14px;border-radius:13px;margin:8px 0}.time{font-variant-numeric:tabular-nums;color:#5b503f}.details{flex:1}.details span{font-size:13px;color:#574d40}.pill{display:inline-block;padding:4px 8px;border-radius:20px;background:#ede4d4}.Yoga{background:#e4e9da}.Sculpt{background:#f1ded4}dialog{width:min(94vw,480px);max-height:90vh;border:1px solid #c9b9a5;border-radius:18px;background:#f8f5ee;color:inherit;padding:22px}dialog::backdrop{background:#28241dcc}label{display:block;margin:12px 0}label input,label select{display:block;width:100%;margin-top:4px}form button{margin-top:5px}article{overflow-wrap:anywhere}footer{color:#5b503f} [hidden]{display:none!important}@media(max-width:430px){header{gap:5px}.brand{font-size:25px}.card{gap:8px;padding:10px}.card button{font-size:14px}.hero:after{right:-190px}}
+.samah-logo{display:block;width:112px;height:auto}.hero{background:#493a2c linear-gradient(90deg,#211911dc,#21191160);background-image:linear-gradient(90deg,#211911dc,#21191160),url("../fondo-horarios.jpg");background-position:center;background-size:cover;color:#fff}.hero:after{content:none}.mine-nav{margin-top:16px}.mine-nav a{display:inline-block;padding:10px;color:#454e3d}
 </style>
 </head>
 <body>
-<header><div><div class="brand">Samah</div><small>Wellness studio</small></div><button id="mine">Mis reservas</button></header>
+<header><a href="../"><img class="samah-logo" src="../samah%20celeste.png" alt="Samah Wellness · Inicio"></a><button id="mine">Mis reservas</button></header>
 <main>
 <section class="hero"><small>Samah Wellness · Agenda de clases</small><h1>Un espacio<br>para moverte.</h1><p>Yoga, Pilates y Sculpt. Elige tu clase y reserva tu lugar.</p></section>
 <p class="note">Cancela con al menos 2 horas de anticipación. Tu nombre y contacto se usan para gestionar la reserva.</p><p id="connection" role="status"></p>
@@ -147,7 +148,9 @@ function bookingCard(b){
   return '<article class="card"><div class="details"><strong>'+esc(b.person||"Mi reserva")+'</strong><br>'+b.type+' · '+shortDate(b.date)+' · '+timeLabel(b)+'<br><span>'+b.access+'</span></div>'+ (b.cancelled?'<span>Cancelada</span>':!canCancel(b)?'<span>Fuera del plazo</span>':'<button data-cancel="'+b.id+'">Cancelar</button>')+'</article>';
 }
 function showMine(){
-  show('Mis reservas',data.bookings.slice().reverse().map(b=>bookingCard(b)).join('')||'<p>Aún no hay reservas en este navegador.</p>');
+  const list=data.bookings.slice().reverse().map(b=>bookingCard(b)).join('')||'<p>Aún no hay reservas en este navegador.</p>';
+  show('Mis reservas','<img class="samah-logo" src="../samah%20celeste.png" alt="Samah Wellness">'+list+'<div class="row mine-nav"><button type="button" id="backAgenda">Volver a la agenda</button><a href="../">Ir al inicio</a></div>');
+  $('backAgenda').onclick=()=>$('modal').close();
 }
 $('mine').onclick=showMine;
 async function cancel(event){
