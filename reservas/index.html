@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reservas · Samah Wellness</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f8f5ee;color:#322c25;font:16px system-ui,sans-serif}header,main,footer{max-width:940px;margin:auto;padding:20px clamp(16px,4vw,40px)}header,.row,.week,.card,.days{display:flex;align-items:center;gap:10px}header,.row,.week,.card{justify-content:space-between}.row{flex-wrap:wrap}.brand{font:30px Georgia}.caps,small{letter-spacing:.12em;font-size:11px;text-transform:uppercase}.hero{position:relative;overflow:hidden;background:#e9dfcf;border-radius:22px;padding:clamp(24px,6vw,64px);isolation:isolate}.hero:after{content:"";position:absolute;z-index:-1;width:330px;height:330px;right:-75px;top:-60px;border-radius:50%;background:repeating-radial-gradient(circle,#cbb69c 0 1px,transparent 2px 11px);opacity:.65;mask-image:linear-gradient(120deg,transparent,#000)}h1,h2,h3{font-family:Georgia;font-weight:normal}h1{font-size:clamp(44px,8vw,80px);line-height:.98;margin:16px 0}h2{font-size:32px;margin-bottom:10px}h3{margin:0;font-size:23px}p{line-height:1.55}.note{padding:12px 16px;background:#efe9dc;border-radius:10px;font-size:14px}button,input,select{font:inherit;border-radius:9px;border:1px solid #b8ad9e;padding:10px;color:inherit;background:#fffdf7;min-height:44px}button{cursor:pointer}button.primary,button[aria-pressed=true]{background:#454e3d;color:#fff;border-color:#454e3d}button:disabled{opacity:.58;cursor:default}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #a66a48;outline-offset:2px}.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin:14px 0}.days button{padding:6px 0}.days strong{display:block;font-size:18px}.card{background:#fffdf7;border:1px solid #e2d8ca;padding:14px;border-radius:13px;margin:8px 0}.time{font-variant-numeric:tabular-nums;color:#5b503f}.details{flex:1}.details span{font-size:13px;color:#574d40}.pill{display:inline-block;padding:4px 8px;border-radius:20px;background:#ede4d4}.Yoga{background:#e4e9da}.Sculpt{background:#f1ded4}dialog{width:min(94vw,480px);max-height:90vh;border:1px solid #c9b9a5;border-radius:18px;background:#f8f5ee;color:inherit;padding:22px}dialog::backdrop{background:#28241dcc}label{display:block;margin:12px 0}label input,label select{display:block;width:100%;margin-top:4px}form button{margin-top:5px}article{overflow-wrap:anywhere}footer{color:#5b503f} [hidden]{display:none!important}@media(max-width:430px){header{gap:5px}.brand{font-size:25px}.card{gap:8px;padding:10px}.card button{font-size:14px}.hero:after{right:-190px}}
+</style>
+</head>
+<body>
+<header><div><div class="brand">Samah</div><small>Wellness studio</small></div><button id="mine">Mis reservas</button><button id="desk">Recepción</button></header>
+<main>
+<section class="hero"><small>Samah Wellness · Agenda de clases</small><h1>Un espacio<br>para moverte.</h1><p>Yoga, Pilates y Sculpt. Elige tu clase y reserva tu lugar.</p></section>
+<p class="note">Modo demo · Cancela con al menos 2 horas de anticipación. Usa datos ficticios. Las reservas solo se guardan en este navegador.</p>
+<section aria-labelledby="agenda"><div class="row"><h2 id="agenda">Agenda semanal</h2><span class="pill">10 lugares por clase</span></div>
+<div class="week"><button id="prev" aria-label="Semana anterior">←</button><strong id="range"></strong><button id="next" aria-label="Semana siguiente">→</button></div>
+<div id="days" class="days" aria-label="Días de la semana"></div>
+<label>Disciplina <select id="filter"><option>Todas</option><option>Yoga</option><option>Pilates</option><option>Sculpt</option></select></label>
+<div id="classes"></div></section>
+<section id="admin" hidden aria-labelledby="deskTitle">
+<h2 id="deskTitle" tabindex="-1">Recepción</h2><p class="note">Panel de prueba sin inicio de sesión. La lista corresponde al día seleccionado en la agenda.</p>
+<div id="roster"></div>
+<h2>Editar horario semanal</h2><p>Los cambios se aplican a la agenda recurrente. Los registros ya confirmados conservan su fecha y hora originales.</p>
+<div id="schedule"></div>
+<form id="edit"><label>Día <select name="day" id="editDay"></select></label><label>Clase <select name="type" id="editType"></select></label><label>Hora de inicio <input type="time" name="time" required></label><label>Hora de fin (opcional) <input type="time" name="end"></label><button class="primary">Guardar horario</button> <button type="button" id="resetEdit">Limpiar</button><p id="editStatus" role="status"></p></form>
+</section>
+</main>
+<footer><small>Samah Wellness · Hora de Ciudad de México</small></footer>
+<dialog id="modal" aria-labelledby="modalTitle">
+<div class="row"><h2 id="modalTitle"></h2><button id="close" aria-label="Cerrar">×</button></div>
+<div id="modalBody"></div></dialog>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const weekdays = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+const access = ['Paquete Samah','Clase suelta','Fitpass','Totalpass','Wellhub'];
+const capacity = 10;
+const key = 'samah-reservas-demo-v2';
+const classNames = ['Yoga Restaurativo','Yoga Vinyasa','Yoga Ashtanga','Pilates Full Body','Sculpt'];
+const [restaurativo,vinyasa,ashtanga,pilates,sculpt] = classNames;
+const base = [
+  [['18:00',restaurativo],['20:00',vinyasa]],
+  [['09:30',pilates],['10:00',vinyasa,'11:00'],['17:00',pilates],['18:00',pilates],['19:00',ashtanga],['20:00',vinyasa]],
+  [['08:00',pilates],['09:30',pilates],['10:30',pilates],['18:00',pilates],['19:00',pilates],['20:00',pilates]],
+  [['08:00',restaurativo],['09:30',pilates],['10:30',vinyasa],['17:00',pilates],['18:00',pilates],['19:00',ashtanga],['20:00',pilates]],
+  [['08:00',restaurativo],['19:00',pilates]],
+  [['07:00',vinyasa],['08:00',vinyasa],['09:15',pilates],['10:15',sculpt]]
+].flatMap((slots,day)=>slots.map(([time,type,end=''],i)=>({id:'slot-'+day+'-'+i,day,time,type,end})));
+const discipline = cls => cls.type.split(' ')[0];
+const timeLabel = cls => cls.end ? cls.time+'–'+cls.end : cls.time;
+function load(){
+  return JSON.parse(localStorage.getItem(key)) || {schedule:base, bookings:[]};
+}
+let data;
+try {data=load();} catch {data={schedule:base,bookings:[]};}
+function save(updated){
+  try {localStorage.setItem(key,JSON.stringify(updated));data=updated;return true;}
+  catch {alert('El navegador no pudo guardar los cambios. Revisa si permite almacenamiento local.');return false;}
+}
+const zone = 'America/Mexico_City';
+function today(){return new Intl.DateTimeFormat('sv-SE',{timeZone:zone}).format(new Date());}
+function shift(date,days){
+  const value=new Date(date+'T12:00:00Z');
+  value.setUTCDate(value.getUTCDate()+days);
+  return value.toISOString().slice(0,10);
+}
+function weekday(date){return (new Date(date+'T12:00:00Z').getUTCDay()+6)%7;}
+function pretty(date, options){
+  return new Intl.DateTimeFormat('es-MX',{timeZone:'UTC',...options}).format(new Date(date+'T12:00:00Z'));
+}
+const shortDate = date => pretty(date,{day:'numeric',month:'short'});
+let selected=today(), monday=shift(selected,-weekday(selected)), editing=null;
+const esc = value => String(value).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => globalThis.crypto?.randomUUID?.() ?? Date.now().toString(36)+Math.random().toString(36).slice(2);
+const active = (cls,date) => data.bookings.filter(b=>!b.cancelled && b.date===date && b.slot===cls.id && b.time===cls.time && b.type===cls.type);
+function started(cls,date){
+  const now=new Intl.DateTimeFormat('en-GB',{timeZone:zone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date());
+  return date<today() || (date===today() && cls.time<=now);
+}
+function render(){
+  $('range').textContent=shortDate(monday)+' – '+shortDate(shift(monday,6))+' '+shift(monday,6).slice(0,4);
+  $('days').innerHTML=weekdays.map((day,i)=>{
+    const date=shift(monday,i);
+    return '<button aria-label="'+day+' '+shortDate(date)+'" aria-pressed="'+(date===selected)+'" data-date="'+date+'">'+day.slice(0,3)+'<strong>'+Number(date.slice(-2))+'</strong></button>';
+  }).join('');
+  const list=data.schedule.filter(c=>c.day===weekday(selected) && ($('filter').value==='Todas'||discipline(c)===$('filter').value)).sort((a,b)=>a.time.localeCompare(b.time));
+  $('classes').innerHTML='<h3>'+pretty(selected,{weekday:'long',day:'numeric',month:'long'})+'</h3>'+ (list.map(c=>{
+    const available=capacity-active(c,selected).length;
+    const closed=started(c,selected);
+    return '<article class="card"><strong class="time">'+timeLabel(c)+'</strong><div class="details"><h3><span class="pill '+discipline(c)+'">'+c.type+'</span></h3><span>'+ (closed?'Horario concluido':available+' de 10 disponibles')+'</span></div><button class="primary" data-book="'+c.id+'" '+(closed||!available?'disabled':'')+'>'+ (closed?'Cerrada':available?'Reservar':'Sin cupo')+'</button></article>';
+  }).join('') || '<p>No hay clases para esta selección.</p>');
+  if(!$('admin').hidden) renderDesk();
+}
+function move(delta){monday=shift(monday,delta);selected=shift(selected,delta);render();}
+$('prev').onclick=()=>move(-7);
+$('next').onclick=()=>move(7);
+$('days').onclick=e=>{
+  const btn=e.target.closest('[data-date]');
+  if(btn){selected=btn.dataset.date;render();$('days').querySelector('[aria-pressed=true]').focus();}
+};
+$('filter').onchange=render;
+function show(title,body){
+  $('modalTitle').textContent=title;
+  $('modalBody').innerHTML=body;
+  if(!$('modal').open)$('modal').showModal();
+}
+$('close').onclick=()=>$('modal').close();
+$('classes').onclick=e=>{
+  if(!e.target.dataset.book)return;
+  const cls=data.schedule.find(c=>c.id===e.target.dataset.book),date=selected;
+  show('Reserva tu clase','<p>'+cls.type+' · '+shortDate(date)+' · '+timeLabel(cls)+'</p><form id="reserve"><label>Nombre <input name="person" required maxlength="80" placeholder="Ej. Ana Demo"></label><label>Correo o teléfono <input name="contact" required maxlength="120" placeholder="Ej. ana@example.com"></label><label>Tipo de acceso <select name="access">'+access.map(a=>'<option>'+a+'</option>').join('')+'</select></label><p>Usa datos ficticios para esta prueba.</p><button class="primary">Confirmar reserva</button><p id="reserveStatus" role="status"></p></form>');
+  $('reserve').onsubmit=event=>{
+    event.preventDefault();
+    const values=new FormData(event.currentTarget);
+    const person=values.get('person').trim(),contact=values.get('contact').trim();
+    if(!person || !(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact)||/^\+?[\d ()-]{7,25}$/.test(contact)&&contact.replace(/\D/g,'').length>=7)){
+      $('reserveStatus').textContent='Escribe un nombre y un correo o teléfono válido.';return;
+    }
+    try{data=load();}catch{}
+    const current=data.schedule.find(c=>c.id===cls.id);
+    if(!current||current.time!==cls.time||current.end!==cls.end||current.type!==cls.type||current.day!==cls.day||started(cls,date)||active(cls,date).length>=capacity){
+      show('Horario no disponible','<p>Vuelve a la agenda para elegir otra clase.</p>');render();return;
+    }
+    const booking={id:uid(),slot:cls.id,type:cls.type,time:cls.time,end:cls.end,date,person,contact,access:values.get('access')};
+    if(!save({...data,bookings:[...data.bookings,booking]}))return;
+    render();
+    show('Reserva confirmada','<p>'+cls.type+' · '+shortDate(date)+' · '+timeLabel(cls)+'</p><p>Folio demo <strong>'+esc(booking.id.slice(-8).toUpperCase())+'</strong></p><p>Tu lugar quedó registrado en este navegador.</p><button class="primary" id="viewMine">Ver mis reservas</button>');
+    $('viewMine').onclick=showMine;
+  };
+};
+function canCancel(b){
+  const parts=new Intl.DateTimeFormat('sv-SE',{timeZone:zone,hourCycle:'h23',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date());
+  const now=Date.parse(today()+'T'+parts+'Z');
+  return Date.parse(b.date+'T'+b.time+':00Z')-now>=7200000;
+}
+function bookingCard(b,desk=false){
+  return '<article class="card"><div class="details"><strong>'+esc(b.person)+'</strong><br>'+b.type+' · '+shortDate(b.date)+' · '+timeLabel(b)+'<br><span>'+b.access+(desk?' · '+esc(b.contact):'')+'</span></div>'+ (b.cancelled?'<span>Cancelada</span>':!canCancel(b)?'<span>Fuera del plazo</span>':'<button data-cancel="'+b.id+'">Cancelar</button>')+'</article>';
+}
+function showMine(){
+  show('Mis reservas',data.bookings.slice().reverse().map(b=>bookingCard(b)).join('')||'<p>Aún no hay reservas en este navegador.</p>');
+}
+$('mine').onclick=showMine;
+function cancel(event,desk){
+  const id=event.target.dataset.cancel;
+  if(!id||!confirm('¿Cancelar esta reserva y liberar el lugar?'))return;
+  try{data=load();}catch{}
+  const booking=data.bookings.find(b=>b.id===id && !b.cancelled);
+  if(!booking || !canCancel(booking)){alert('Puedes cancelar hasta 2 horas antes del inicio.');return;}
+  if(save({...data,bookings:data.bookings.map(b=>b.id===id?{...b,cancelled:true}:b)})){
+    render();if(!desk)showMine();
+  }
+}
+$('modalBody').onclick=e=>cancel(e,false);
+$('roster').onclick=e=>cancel(e,true);
+$('desk').onclick=()=>{
+  $('admin').hidden=!$('admin').hidden;
+  $('desk').setAttribute('aria-expanded',String(!$('admin').hidden));
+  if(!$('admin').hidden){renderDesk();$('deskTitle').focus();}
+};
+$('desk').setAttribute('aria-controls','admin');
+$('desk').setAttribute('aria-expanded','false');
+$('editType').innerHTML=classNames.map(name=>'<option>'+name+'</option>').join('');
+$('editDay').innerHTML=weekdays.map((day,i)=>'<option value="'+i+'">'+day+'</option>').join('');
+function renderDesk(){
+  const list=data.bookings.filter(b=>b.date===selected).sort((a,b)=>a.time.localeCompare(b.time));
+  $('roster').innerHTML='<h3>'+shortDate(selected)+' · '+list.filter(b=>!b.cancelled).length+' activas</h3>'+(list.map(b=>bookingCard(b,true)).join('')||'<p>No hay reservas para este día.</p>');
+  $('schedule').innerHTML=data.schedule.slice().sort((a,b)=>a.day-b.day||a.time.localeCompare(b.time)).map(c=>
+    '<article class="card"><div>'+weekdays[c.day]+' · '+timeLabel(c)+' · '+c.type+'</div><button data-edit="'+c.id+'">Editar</button></article>').join('');
+}
+$('schedule').onclick=e=>{
+  const cls=data.schedule.find(c=>c.id===e.target.dataset.edit);
+  if(!cls)return;
+  editing=cls.id;
+  const fields=$('edit').elements;
+  fields.day.value=cls.day;fields.type.value=cls.type;fields.time.value=cls.time;fields.end.value=cls.end;
+  $('editStatus').textContent='Editando '+weekdays[cls.day]+' · '+cls.type+' · '+cls.time;
+  fields.day.focus();
+};
+function resetEdit(){
+  editing=null;$('edit').reset();$('editStatus').textContent='';
+}
+$('resetEdit').onclick=resetEdit;
+$('edit').onsubmit=e=>{
+  e.preventDefault();
+  const form=new FormData(e.currentTarget);
+  const cls={id:editing||uid(),day:Number(form.get('day')),type:form.get('type'),time:form.get('time'),end:form.get('end')};
+  if(cls.end && cls.end<=cls.time){
+    $('editStatus').textContent='La hora de fin debe ser posterior a la de inicio.';return;
+  }
+  try{data=load();}catch{}
+  if(data.schedule.some(c=>c.id!==cls.id&&c.day===cls.day&&c.time===cls.time&&c.type===cls.type)){
+    $('editStatus').textContent='Ya existe esa clase en este horario.';return;
+  }
+  if(editing && data.bookings.some(b=>!b.cancelled && b.slot===editing && !started(b,b.date))){
+    $('editStatus').textContent='Este horario tiene reservas futuras activas. Gestiona esas reservas antes de editarlo.';return;
+  }
+  const schedule=editing?data.schedule.map(c=>c.id===editing?cls:c):[...data.schedule,cls];
+  if(save({...data,schedule})){resetEdit();$('editStatus').textContent='Horario guardado.';render();}
+};
+addEventListener('storage',e=>{if(e.key===key){try{data=load();render();}catch{}}});
+render();
+</script>
+</body>
+</html>
