@@ -149,7 +149,7 @@ function bookingCard(b){
 }
 function showMine(){
   const list=data.bookings.slice().reverse().map(b=>bookingCard(b)).join('')||'<p>Aún no hay reservas en este navegador.</p>';
-  show('Mis reservas','<img class="samah-logo" src="../samah%20celeste.png" alt="Samah Wellness">'+list+'<div class="row mine-nav"><button type="button" id="backAgenda">Volver a la agenda</button><a href="../">Ir al inicio</a></div>');
+  show('Mis reservas','<a href="../"><img class="samah-logo" src="../samah%20celeste.png" alt="Samah Wellness · Inicio"></a>'+list+'<div class="row mine-nav"><button type="button" id="backAgenda">Volver a la agenda</button><a href="../">Ir al inicio</a></div>');
   $('backAgenda').onclick=()=>$('modal').close();
 }
 $('mine').onclick=showMine;
