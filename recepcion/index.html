@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="es-MX"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Recepción · Samah Wellness</title>
-<style>body{margin:0;background:#f8f5ee;color:#322c25;font:16px system-ui}main{max-width:660px;margin:auto;padding:24px}img{width:115px}h1{font:38px Georgia}label{display:block;margin:12px 0}input,button{font:inherit;padding:10px;border:1px solid #b8ad9e;border-radius:8px}label input{display:block;margin-top:4px}button{background:#454e3d;color:white}li{padding:12px;background:#fffdf7;margin:6px 0;border-radius:8px}ul{padding:0;list-style:none}</style></head>
+<style>body{margin:0;background:#f8f5ee;color:#322c25;font:16px system-ui}main{max-width:660px;margin:auto;padding:24px}img{width:115px}h1{font:38px Georgia}label{display:block;margin:12px 0}input,button{font:inherit;padding:10px;border:1px solid #b8ad9e;border-radius:8px}label input{display:block;margin-top:4px}button{background:#454e3d;color:white}li{padding:12px;background:#fffdf7;margin:6px 0;border-radius:8px}ul{padding:0;list-style:none}.access{display:inline-block;margin-left:10px;padding:3px 8px;border-radius:20px;background:#e4e9da;color:#333c2b;font-size:13px}</style></head>
 <body><main><a href="../"><img src="../samah%20celeste.png" alt="Samah Wellness · Inicio"></a><h1>Recepción</h1><p id="status" role="status"></p>
 <form id="login" hidden><label>Correo <input type="email" name="email" autocomplete="username" required></label><label>Contraseña <input type="password" name="password" autocomplete="current-password" required></label><button>Entrar</button></form>
 <section id="panel" hidden><label>Fecha de la clase <input id="day" type="date" required></label><button id="refresh">Actualizar lista</button> <button id="logout">Cerrar sesión</button><ul id="roster"></ul></section></main>
@@ -46,6 +46,12 @@ async function refresh(){
     for(const row of active){
       const li=document.createElement('li');
       li.textContent=row.starts.slice(0,5)+' · '+row.type+' · '+row.person;
+      if(row.access){
+        const badge=document.createElement('span');
+        badge.className='access';
+        badge.textContent=row.access;
+        li.append(badge);
+      }
       $('roster').append(li);
     }
     $('login').hidden=true;$('panel').hidden=false;
