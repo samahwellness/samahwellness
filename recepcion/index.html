@@ -3,7 +3,17 @@
 <style>body{margin:0;background:#f8f5ee;color:#322c25;font:16px system-ui}main{max-width:660px;margin:auto;padding:24px}img{width:115px}h1{font:38px Georgia}label{display:block;margin:12px 0}input,button{font:inherit;padding:10px;border:1px solid #b8ad9e;border-radius:8px}label input{display:block;margin-top:4px}button{background:#454e3d;color:white}li{padding:12px;background:#fffdf7;margin:6px 0;border-radius:8px}ul{padding:0;list-style:none}.access{display:inline-block;margin-left:10px;padding:3px 8px;border-radius:20px;background:#e4e9da;color:#333c2b;font-size:13px}</style></head>
 <body><main><a href="../"><img src="../samah%20celeste.png" alt="Samah Wellness · Inicio"></a><h1>Recepción</h1><p id="status" role="status"></p>
 <form id="login" hidden><label>Correo <input type="email" name="email" autocomplete="username" required></label><label>Contraseña <input type="password" name="password" autocomplete="current-password" required></label><button>Entrar</button></form>
-<section id="panel" hidden><label>Fecha de la clase <input id="day" type="date" required></label><button id="refresh">Actualizar lista</button> <button id="logout">Cerrar sesión</button><ul id="roster"></ul><section aria-labelledby="fitpass-title"><h2 id="fitpass-title">Revisar CSV de Fitpass</h2><p>Compara las reservas activas del CSV con las de Samah. La vista previa no guarda ni cancela reservas.</p><label>Archivo CSV <input id="fitpass-file" type="file" accept=".csv,text/csv"></label><p id="fitpass-status" role="status"></p><ul id="fitpass-preview"></ul></section></section></main>
+<section id="panel" hidden><label>Fecha de la clase <input id="day" type="date" required></label><button id="refresh">Actualizar lista</button> <button id="logout">Cerrar sesión</button><ul id="roster"></ul><section aria-labelledby="rewards-title"><h2 id="rewards-title">Samah Rewards</h2>
+<button id="rewards-open">Abrir Rewards</button><div id="rewards-panel" hidden>
+<label>Buscar por nombre y apellido <input id="rewards-search" type="search"></label>
+<label>Ficha <select id="rewards-student"></select></label>
+<form id="rewards-create"><label>Nombre <input name="first_name" maxlength="80" required></label>
+<label>Apellido <input name="last_name" maxlength="80" required></label><button>Crear ficha</button></form>
+<form id="rewards-visit" hidden><label>Fecha <input name="day" type="date" required></label>
+<label>Hora de clase <input name="starts" type="time" required></label>
+<label>Acceso <select name="channel"><option>Fitpass</option><option>TotalPass</option><option>Clase suelta</option></select></label>
+<button>Confirmar asistencia</button></form>
+<p id="rewards-progress"></p><ul id="rewards-awards"></ul></div><p id="rewards-status" role="status"></p></section><section aria-labelledby="fitpass-title"><h2 id="fitpass-title">Revisar CSV de Fitpass</h2><p>Compara las reservas activas del CSV con las de Samah. La vista previa no guarda ni cancela reservas.</p><label>Archivo CSV <input id="fitpass-file" type="file" accept=".csv,text/csv"></label><p id="fitpass-status" role="status"></p><ul id="fitpass-preview"></ul></section></section></main>
 <script>
 const endpoint='https://idbcuvhyhilqeglzkywt.supabase.co';
 const apikey='sb_publishable_YHDLKcV5pd31_V5s940uVA_vnIQqCso';
@@ -24,7 +34,7 @@ function remember(value){
   try{if(value)localStorage.setItem(key,JSON.stringify(value));else localStorage.removeItem(key);}catch{}
 }
 function showLogin(message){
-  ++generation;clearFitpass();remember(null);$('panel').hidden=true;$('roster').replaceChildren();
+  ++generation;clearFitpass();clearRewards();remember(null);$('panel').hidden=true;$('roster').replaceChildren();
   $('login').hidden=false;$('status').textContent=message;
 }
 async function access(){
@@ -150,6 +160,117 @@ $('fitpass-file').onchange=async event=>{
     preview.replaceChildren();
     status.textContent=error.status?'No se pudo consultar la lista de Samah. Revisa tu sesión e inténtalo de nuevo.':error.message;
   }
+};
+
+
+let rewardStudents=[],rewardsSession=0;
+function clearRewards(){
+  ++rewardsSession;
+  rewardStudents=[];
+  $('rewards-panel').hidden=true;
+  $('rewards-search').value='';
+  $('rewards-student').replaceChildren();
+  $('rewards-create').reset();
+  $('rewards-visit').reset();
+  $('rewards-visit').hidden=true;
+  $('rewards-awards').replaceChildren();
+  $('rewards-progress').textContent='';
+  $('rewards-status').textContent='';
+}
+async function rewards(action,data={}){
+  const token=await access();
+  return request('/rest/v1/rpc/samah_rewards',{p_action:action,p_data:data},token);
+}
+async function rewardAction(action){
+  const version=rewardsSession;
+  $('rewards-status').textContent='';
+  try{await action(()=>version===rewardsSession);}
+  catch{if(version===rewardsSession)$('rewards-status').textContent='No se pudo completar la operación. Revisa la sesión y si la asistencia o el canje ya se registró.';}
+}
+function rewardOptions(selected=''){
+  const search=normalizeName($('rewards-search').value);
+  $('rewards-student').replaceChildren(new Option('Selecciona una ficha',''));
+  for(const row of rewardStudents){
+    const name=row.first_name+' '+row.last_name;
+    const key=normalizeName(name);
+    if(key.includes(search))$('rewards-student').add(new Option(name+' · ficha '+row.id.slice(0,8),row.id));
+  }
+  if(selected)$('rewards-student').value=selected;
+}
+async function showRewards(current){
+  const student=$('rewards-student').value;
+  $('rewards-awards').replaceChildren();
+  $('rewards-progress').textContent='';
+  $('rewards-visit').hidden=true;
+  if(!student)return;
+  const data=await rewards('view',{student});
+  if(!current()||$('rewards-student').value!==student)return;
+  $('rewards-visit').hidden=false;
+  $('rewards-progress').textContent='Visitas de '+data.month.slice(0,7)+' · '+['Fitpass','TotalPass','Clase suelta'].map(channel=>channel+': '+(data.visits[channel]||0)).join(' · ');
+  for(const award of data.awards){
+    const row=document.createElement('li');
+    row.textContent=award.reward+' · ganado en '+award.month.slice(0,7)+' · ';
+    if(award.redeemed_at){
+      row.append('Canjeado el '+new Date(award.redeemed_at).toLocaleDateString('es-MX',{timeZone:'America/Mexico_City'}));
+    }else{
+      row.append('Disponible ');
+      const button=document.createElement('button');
+      button.textContent='Registrar canje';
+      button.onclick=()=>rewardAction(async current=>{
+        if(!confirm('¿Registrar el canje de '+award.reward+'?'))return;
+        button.disabled=true;
+        try{await rewards('redeem',{student,month:award.month,reward:award.reward});if(current())await showRewards(current);}
+        finally{button.disabled=false;}
+      });
+      row.append(button);
+    }
+    $('rewards-awards').append(row);
+  }
+}
+$('rewards-open').onclick=()=>rewardAction(async current=>{
+  const rows=await rewards('students');
+  if(!current())return;
+  rewardStudents=rows;
+  rewardOptions();
+  $('rewards-visit').elements.day.value=$('day').value;
+  $('rewards-panel').hidden=false;
+  await showRewards(current);
+});
+$('rewards-search').oninput=()=>{rewardOptions($('rewards-student').value);rewardAction(showRewards);};
+$('rewards-student').onchange=()=>rewardAction(showRewards);
+$('rewards-create').onsubmit=event=>{
+  event.preventDefault();
+  const form=event.currentTarget,data=Object.fromEntries(new FormData(form));
+  const name=normalizeName(data.first_name+' '+data.last_name);
+  if(rewardStudents.some(row=>normalizeName(row.first_name+' '+row.last_name)===name)&&
+    !confirm('Ya hay una ficha con este nombre. ¿Es otra persona?'))return;
+  rewardAction(async current=>{
+    const button=form.querySelector('button');
+    button.disabled=true;
+    try{
+      const student=await rewards('create',data);
+      const rows=await rewards('students');
+      if(!current())return;
+      rewardStudents=rows;
+      form.reset();
+      $('rewards-search').value='';
+      rewardOptions(student);
+      await showRewards(current);
+    }finally{button.disabled=false;}
+  });
+};
+$('rewards-visit').onsubmit=event=>{
+  event.preventDefault();
+  const form=event.currentTarget,student=$('rewards-student').value;
+  const data={student,...Object.fromEntries(new FormData(form))};
+  rewardAction(async current=>{
+    const button=form.querySelector('button');
+    button.disabled=true;
+    try{
+      await rewards('visit',data);
+      if(current()){await showRewards(current);$('rewards-status').textContent='Asistencia registrada.';}
+    }finally{button.disabled=false;}
+  });
 };
 
 if(session)refresh();else $('login').hidden=false;
