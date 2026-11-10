@@ -26,7 +26,10 @@ async function request(path,body,token){
   const headers={apikey,'Content-Type':'application/json'};
   if(token)headers.Authorization='Bearer '+token;
   const r=await fetch(endpoint+path,{method:'POST',headers,body:JSON.stringify(body)});
-  if(!r.ok)throw Object.assign(Error('Solicitud rechazada'),{status:r.status});
+  if(!r.ok){
+    const error=await r.json().catch(()=>null);
+    throw Object.assign(Error(error?.code==='P0001'&&error.message?error.message:'Solicitud rechazada'),{status:r.status});
+  }
   return r.status===204?null:r.json();
 }
 function remember(value){
@@ -62,6 +65,7 @@ async function refresh(){
         badge.textContent=row.access;
         li.append(badge);
       }
+      showCheckIn(li,row,$('day').value);
       $('roster').append(li);
     }
     $('login').hidden=true;$('panel').hidden=false;
@@ -272,6 +276,113 @@ $('rewards-visit').onsubmit=event=>{
     }finally{button.disabled=false;}
   });
 };
+
+
+const checkInChannels={'fitpass':'Fitpass','totalpass':'TotalPass','clase suelta':'Clase suelta'};
+const checkInKey='samah-rewards-checkins-v1';
+function recordedCheckIn(id){
+  try{return localStorage.getItem(checkInKey+':'+id)==='1';}catch{return false;}
+}
+function showCheckIn(li,row,date){
+  const channel=checkInChannels[normalizeName(row.access)];
+  if(!channel)return;
+  const button=document.createElement('button');
+  button.type='button';
+  button.textContent='Sí asistió';
+  const detail=document.createElement('div');
+  detail.setAttribute('aria-live','polite');
+  function finish(){
+    try{localStorage.setItem(checkInKey+':'+row.id,'1');}catch{}
+    button.disabled=true;
+    button.textContent='Asistencia registrada';
+    detail.replaceChildren();
+    if(!$('rewards-panel').hidden)rewardAction(showRewards);
+  }
+  let registering=false;
+  async function register(student){
+    if(registering||recordedCheckIn(row.id))return;
+    registering=true;
+    try{
+      try{
+      await rewards('visit',{student,day:date,starts:row.starts,channel});
+      }catch(error){
+        if(!error.message.startsWith('Ya hay una asistencia para esa alumna'))throw error;
+      }
+      finish();
+    }finally{registering=false;}
+  }
+  function message(error){
+    detail.append(document.createTextNode(error.message==='Solicitud rechazada'?
+      ' No se pudo registrar. Revisa tu sesión e inténtalo de nuevo.':' '+error.message));
+  }
+  button.onclick=async()=>{
+    button.disabled=true;
+    detail.replaceChildren();
+    try{
+      const rosterGeneration=generation;
+      const students=await rewards('students');
+      if(rosterGeneration!==generation||!session)return;
+      const name=normalizeName(row.person);
+      const exact=students.filter(s=>normalizeName(s.first_name+' '+s.last_name)===name);
+      if(name.includes(' ')&&exact.length===1){await register(exact[0].id);return;}
+
+      const form=document.createElement('form');
+      const label=document.createElement('label');
+      label.textContent='Elige la ficha de Rewards ';
+      const select=document.createElement('select');
+      select.required=true;
+      select.add(new Option('Selecciona una ficha',''));
+      const fullName=s=>s.first_name+' '+s.last_name;
+      const sorted=[...students].sort((a,b)=>Number(normalizeName(fullName(b)).includes(name))-Number(normalizeName(fullName(a)).includes(name)));
+      for(const s of sorted)select.add(new Option(fullName(s)+' · '+s.id.slice(0,8),s.id));
+      label.append(select);
+      const save=document.createElement('button');
+      save.textContent='Registrar en esta ficha';
+      form.append(label,save);
+      form.onsubmit=async event=>{
+        event.preventDefault();
+        save.disabled=true;
+        try{await register(select.value);}catch(error){message(error);save.disabled=false;}
+      };
+      const create=document.createElement('details');
+      const summary=document.createElement('summary');
+      summary.textContent='Crear ficha si es una alumna nueva';
+      const newForm=document.createElement('form');
+      const [first,...last]=row.person.trim().split(/\s+/);
+      for(const [key,title,value] of [['first_name','Nombre',first],['last_name','Apellido',last.join(' ')]]){
+        const field=document.createElement('label');
+        const input=document.createElement('input');
+        input.name=key;input.value=value;input.required=true;input.maxLength=80;
+        field.append(title+' ',input);
+        newForm.append(field);
+      }
+      const createButton=document.createElement('button');
+      createButton.textContent='Crear ficha y registrar asistencia';
+      newForm.append(createButton);
+      let created;
+      newForm.onsubmit=async event=>{
+        event.preventDefault();
+        createButton.disabled=true;
+        try{
+          const data=Object.fromEntries(new FormData(newForm));
+          if(!created){
+            const entered=normalizeName(data.first_name+' '+data.last_name);
+            const currentStudents=await rewards('students');
+            if(currentStudents.some(s=>normalizeName(fullName(s))===entered)&&!confirm('Ya existe una ficha con ese nombre. ¿Es otra persona?'))return;
+            created=await rewards('create',data);
+            for(const input of newForm.querySelectorAll('input'))input.disabled=true;
+          }
+          await register(created);
+        }catch(error){message(error);}finally{createButton.disabled=false;}
+      };
+      create.append(summary,newForm);
+      detail.append(form,create);
+    }catch(error){message(error);}
+    finally{if(button.textContent==='Sí asistió')button.disabled=false;}
+  };
+  li.append(' ',button,detail);
+  if(recordedCheckIn(row.id)){button.disabled=true;button.textContent='Asistencia registrada';}
+}
 
 if(session)refresh();else $('login').hidden=false;
 </script></body></html>
