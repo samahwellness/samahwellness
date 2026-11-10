@@ -281,7 +281,7 @@ $('rewards-visit').onsubmit=event=>{
 const checkInChannels={'fitpass':'Fitpass','totalpass':'TotalPass','clase suelta':'Clase suelta'};
 const checkInKey='samah-rewards-checkins-v1';
 function recordedCheckIn(id){
-  try{return localStorage.getItem(checkInKey+':'+id)==='1';}catch{return false;}
+  try{return localStorage.getItem(checkInKey+':'+id);}catch{return null;}
 }
 function showCheckIn(li,row,date){
   const channel=checkInChannels[normalizeName(row.access)];
@@ -291,24 +291,49 @@ function showCheckIn(li,row,date){
   button.textContent='Sí asistió';
   const detail=document.createElement('div');
   detail.setAttribute('aria-live','polite');
-  function finish(){
-    try{localStorage.setItem(checkInKey+':'+row.id,'1');}catch{}
+  function markRecorded(student){
     button.disabled=true;
     button.textContent='Asistencia registrada';
     detail.replaceChildren();
-    if(!$('rewards-panel').hidden)rewardAction(showRewards);
+    if(student==='1')return;
+    const undo=document.createElement('button');
+    undo.type='button';
+    undo.textContent='Deshacer asistencia';
+    undo.onclick=async()=>{
+      if(!confirm('¿Deshacer la asistencia de '+row.person+' del '+date+' a las '+row.starts.slice(0,5)+'?'))return;
+      undo.disabled=true;
+      try{
+        const token=await access();
+        await request('/rest/v1/rpc/samah_rewards_undo_visit',{
+          p_student:student,p_day:date,p_starts:row.starts,p_channel:channel
+        },token);
+        try{localStorage.removeItem(checkInKey+':'+row.id);}catch{}
+        detail.textContent='Asistencia retirada de Rewards.';
+        button.textContent='Sí asistió';
+        button.disabled=false;
+        if(!$('rewards-panel').hidden)rewardAction(showRewards);
+      }catch(error){
+        message(error);
+        undo.disabled=false;
+      }
+    };
+    detail.append(undo);
   }
   let registering=false;
   async function register(student){
     if(registering||recordedCheckIn(row.id))return;
     registering=true;
     try{
+      let marker=student;
       try{
-      await rewards('visit',{student,day:date,starts:row.starts,channel});
+        await rewards('visit',{student,day:date,starts:row.starts,channel});
       }catch(error){
         if(!error.message.startsWith('Ya hay una asistencia para esa alumna'))throw error;
+        marker='1';
       }
-      finish();
+      try{localStorage.setItem(checkInKey+':'+row.id,marker);}catch{}
+      markRecorded(marker);
+      if(!$('rewards-panel').hidden)rewardAction(showRewards);
     }finally{registering=false;}
   }
   function message(error){
@@ -381,7 +406,8 @@ function showCheckIn(li,row,date){
     finally{if(button.textContent==='Sí asistió')button.disabled=false;}
   };
   li.append(' ',button,detail);
-  if(recordedCheckIn(row.id)){button.disabled=true;button.textContent='Asistencia registrada';}
+  const marker=recordedCheckIn(row.id);
+  if(marker)markRecorded(marker);
 }
 
 if(session)refresh();else $('login').hidden=false;
