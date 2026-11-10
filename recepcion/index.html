@@ -295,18 +295,18 @@ function showCheckIn(li,row,date){
     button.disabled=true;
     button.textContent='Asistencia registrada';
     detail.replaceChildren();
-    if(student==='1')return;
     const undo=document.createElement('button');
     undo.type='button';
     undo.textContent='Deshacer asistencia';
-    undo.onclick=async()=>{
-      if(!confirm('¿Deshacer la asistencia de '+row.person+' del '+date+' a las '+row.starts.slice(0,5)+'?'))return;
+    async function undoVisit(studentId,person){
+      if(!confirm('¿Deshacer la asistencia de '+person+' del '+date+' a las '+row.starts.slice(0,5)+'?'))return;
       undo.disabled=true;
       try{
         const token=await access();
-        await request('/rest/v1/rpc/samah_rewards_undo_visit',{
-          p_student:student,p_day:date,p_starts:row.starts,p_channel:channel
+        const removed=await request('/rest/v1/rpc/samah_rewards_undo_visit',{
+          p_student:studentId,p_day:date,p_starts:row.starts,p_channel:channel
         },token);
+        if(!removed)throw Error('No se encontró una asistencia con esa ficha, fecha, hora y acceso.');
         try{localStorage.removeItem(checkInKey+':'+row.id);}catch{}
         detail.textContent='Asistencia retirada de Rewards.';
         button.textContent='Sí asistió';
@@ -316,6 +316,36 @@ function showCheckIn(li,row,date){
         message(error);
         undo.disabled=false;
       }
+    }
+    undo.onclick=async()=>{
+      if(student!=='1'){await undoVisit(student,row.person);return;}
+      undo.disabled=true;
+      try{
+        const version=generation;
+        const students=await rewards('students');
+        if(version!==generation)return;
+        const form=document.createElement('form');
+        const label=document.createElement('label');
+        label.textContent='Confirma la ficha de la asistencia original ';
+        const select=document.createElement('select');
+        select.required=true;
+        select.add(new Option('Selecciona una ficha',''));
+        const name=normalizeName(row.person);
+        const fullName=s=>s.first_name+' '+s.last_name;
+        students.sort((a,b)=>Number(normalizeName(fullName(b)).includes(name))-Number(normalizeName(fullName(a)).includes(name)));
+        for(const item of students)select.add(new Option(fullName(item)+' · '+item.id.slice(0,8),item.id));
+        label.append(select);
+        const submit=document.createElement('button');
+        submit.textContent='Confirmar ficha y deshacer';
+        form.append(label,submit);
+        form.onsubmit=async event=>{
+          event.preventDefault();
+          submit.disabled=true;
+          try{await undoVisit(select.value,select.selectedOptions[0].textContent);}
+          finally{submit.disabled=false;}
+        };
+        detail.replaceChildren(form);
+      }catch(error){message(error);undo.disabled=false;}
     };
     detail.append(undo);
   }
