@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="es-MX"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Recepción · Samah Wellness</title>
-<style>body{margin:0;background:#f8f5ee;color:#322c25;font:16px system-ui}main{max-width:900px;margin:auto;padding:24px}img{width:115px}h1{font:38px Georgia}label{display:block;margin:12px 0}input,button{font:inherit;padding:10px;border:1px solid #b8ad9e;border-radius:8px}label input{display:block;margin-top:4px}button{background:#454e3d;color:white}li{padding:12px;background:#fffdf7;margin:6px 0;border-radius:8px}ul{padding:0;list-style:none}.access{display:inline-block;margin-left:10px;padding:3px 8px;border-radius:20px;background:#e4e9da;color:#333c2b;font-size:13px}.desk-form{background:#f1eee5;padding:16px;margin:12px 0;border-radius:10px}select{font:inherit;padding:10px;max-width:100%;border:1px solid #b8ad9e;border-radius:8px}button{cursor:pointer;margin:4px 6px 4px 0}button:disabled{opacity:.65;cursor:default}details{margin:14px 0}summary{cursor:pointer;font-weight:600}label input{max-width:95%}</style></head>
+<style>body{margin:0;background:#f8f5ee;color:#322c25;font:16px system-ui}main{max-width:900px;margin:auto;padding:24px}img{width:115px}h1{font:38px Georgia}label{display:block;margin:12px 0}input,button{font:inherit;padding:10px;border:1px solid #b8ad9e;border-radius:8px}label input{display:block;margin-top:4px}button{background:#454e3d;color:white}li{padding:12px;background:#fffdf7;margin:6px 0;border-radius:8px}ul{padding:0;list-style:none}.access{display:inline-block;margin-left:10px;padding:3px 8px;border-radius:20px;background:#e4e9da;color:#333c2b;font-size:13px}.desk-form{background:#f1eee5;padding:16px;margin:12px 0;border-radius:10px}select{font:inherit;padding:10px;max-width:100%;border:1px solid #b8ad9e;border-radius:8px}button{cursor:pointer;margin:4px 6px 4px 0}button:disabled{opacity:.65;cursor:default}details{margin:14px 0}summary{cursor:pointer;font-weight:600}label input{max-width:95%}[hidden]{display:none!important}</style></head>
 <body><main><a href="../"><img src="../samah%20celeste.png" alt="Samah Wellness · Inicio"></a><h1>Recepción</h1><p id="status" role="status"></p>
 <form id="login" hidden><label>Correo <input type="email" name="email" autocomplete="username" required></label><label>Contraseña <input type="password" name="password" autocomplete="current-password" required></label><button>Entrar</button></form>
 <section id="panel" hidden><label>Fecha de la clase <input id="day" type="date" required></label><button id="refresh">Actualizar lista</button> <button id="logout">Cerrar sesión</button><ul id="roster"></ul><section aria-labelledby="desk-total"><h2 id="desk-total">Resumen diario</h2><p id="desk-breakdown"></p><details><summary>Ver cobros directos</summary><ul id="desk-payments"></ul></details><details><summary>Asistencias del día · corregir o deshacer</summary><ul id="desk-day-visits"></ul></details></section><section aria-labelledby="rewards-title"><h2 id="rewards-title">Samah Rewards</h2>
@@ -349,9 +349,17 @@ function attendanceForm(holder,student,profile,{booking,visit}={}) {
   field(form,'Actividad o nota','note','text',visit?.note||'');
   const summary=node('p');form.append(summary);
   const update=()=> {
-    packages.parentElement.hidden=!isPackage(channel.value);packages.required=isPackage(channel.value);
+    const usesPackage=isPackage(channel.value);
+    packages.parentElement.hidden=!usesPackage;
+    packages.required=usesPackage;
+    packages.disabled=!usesPackage;
+    if(!usesPackage)packages.value='';
     const amount=(channel.value==='Clase suelta'?150:channel.value==='Primera vez'?100:0)+Number(extra.value||0);
-    method.required=amount>0;
+    const hasDirectPayment=amount>0;
+    method.required=hasDirectPayment;
+    method.disabled=!hasDirectPayment;
+    method.parentElement.hidden=!hasDirectPayment;
+    if(!hasDirectPayment)method.value='';
     summary.textContent='Cobro directo de esta visita: '+money(amount)+(isPackage(channel.value)?' · Se descontará una clase del paquete.':'');
   };
   channel.onchange=update;extra.oninput=update;update();
