@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -915,7 +914,7 @@ background-position: center;
 .paquetes-samah-opciones { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
 .paquetes-samah-opciones a { display: inline-block; padding: 12px 20px; border-radius: 8px; background: #414936; color: #fff; text-decoration: none; }
 .paquetes-samah-opciones a:hover { text-decoration: underline; }
-</style>
+.paquetes-samah-opciones button,.compra-form button{padding:12px 20px;border:0;border-radius:8px;background:#414936;color:white;font:inherit;cursor:pointer}.compra-form{max-width:500px;margin:28px auto;text-align:left}.compra-form label{display:block;margin:12px 0}.compra-form input,.compra-form select{display:block;padding:10px;font:inherit;width:100%;box-sizing:border-box}.compra-form button:disabled{opacity:.6}</style>
 
 </head>
 
@@ -1088,13 +1087,51 @@ background-position: center;
 
 <section id="paquetes" class="seccion-clases paquetes-samah" aria-labelledby="titulo-paquetes">
   <h2 id="titulo-paquetes">Paquetes de clases</h2>
-  <p>Elige tu paquete y paga con Mercado Pago.</p>
+  <p>4 y 9 clases hasta agotarlas. Ilimitado con vigencia de un mes desde el pago.</p>
   <div class="paquetes-samah-opciones">
-    <a href="https://mpago.la/1zecg1n">Comprar 4 clases</a>
-    <a href="https://mpago.la/1ii67Nr">Comprar 9 clases</a>
-    <a href="https://mpago.la/2f11Z4b">Comprar ilimitado</a>
+    <button type="button" data-buy-plan="Paquete 4">4 clases · $580</button>
+    <button type="button" data-buy-plan="Paquete 9">9 clases · $1,250</button>
+    <button type="button" data-buy-plan="Ilimitado">Ilimitado · $1,800</button>
   </div>
-</section>
+<form id="compra-samah" class="compra-form">
+  <h3>Registra tu compra</h3>
+  <label>Nombre <input name="first" autocomplete="given-name" maxlength="80" required></label>
+  <label>Apellido <input name="last" autocomplete="family-name" maxlength="80" required></label>
+  <label>Paquete <select name="plan" required><option value="Paquete 4">4 clases · $580</option><option value="Paquete 9">9 clases · $1,250</option><option value="Ilimitado">Ilimitado · $1,800</option></select></label>
+  <p>Recepción activará tu paquete cuando verifique el pago. Conserva tu comprobante.</p>
+  <button type="submit">Continuar a Mercado Pago</button><p id="compra-estado" role="status"></p>
+</form><script>(() => {
+  const form=document.getElementById('compra-samah');
+  const links={'Paquete 4':'https://mpago.la/1zecg1n','Paquete 9':'https://mpago.la/1ii67Nr','Ilimitado':'https://mpago.la/2f11Z4b'};
+  let requestId=crypto.randomUUID();
+  form.onsubmit=async event=> {
+    event.preventDefault();
+    const data=new FormData(form),plan=data.get('plan');
+    if(!Object.hasOwn(links,plan))return;
+    const submit=form.querySelector('button'),status=document.getElementById('compra-estado');
+    submit.disabled=true;status.textContent='Guardando tu solicitud…';
+    try {
+      const response=await fetch('https://idbcuvhyhilqeglzkywt.supabase.co/rest/v1/rpc/samah_checkout',{
+        method:'POST',headers:{'Content-Type':'application/json',apikey:'sb_publishable_YHDLKcV5pd31_V5s940uVA_vnIQqCso'},
+        body:JSON.stringify({p_id:requestId,p_first:data.get('first'),p_last:data.get('last'),p_plan:plan})
+      });
+      if(!response.ok)throw Error();
+      status.textContent='Solicitud registrada. Conserva el comprobante de pago para activar tu paquete en Recepción.';
+      location.assign(links[plan]);
+    } catch {status.textContent='No se pudo guardar tu solicitud. Inténtalo de nuevo.';submit.disabled=false;}
+  };
+  form.addEventListener('input',()=>{requestId=crypto.randomUUID();});
+  document.querySelectorAll('[data-buy-plan]').forEach(button=> {
+    button.onclick=()=> {
+      form.elements.plan.value=button.dataset.buyPlan;
+      requestId=crypto.randomUUID();
+      form.elements.first.focus();
+      form.scrollIntoView({behavior:'smooth',block:'center'});
+    };
+  });
+})();
+
+</script></section>
 
 <section class="seccion-experiencias" id="experiencias">
   <h2>Momentos que se viven en Samah</h2>

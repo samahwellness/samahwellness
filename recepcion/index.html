@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="es-MX"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Recepción · Samah Wellness</title>
-<style>body{margin:0;background:#f8f5ee;color:#322c25;font:16px system-ui}main{max-width:660px;margin:auto;padding:24px}img{width:115px}h1{font:38px Georgia}label{display:block;margin:12px 0}input,button{font:inherit;padding:10px;border:1px solid #b8ad9e;border-radius:8px}label input{display:block;margin-top:4px}button{background:#454e3d;color:white}li{padding:12px;background:#fffdf7;margin:6px 0;border-radius:8px}ul{padding:0;list-style:none}.access{display:inline-block;margin-left:10px;padding:3px 8px;border-radius:20px;background:#e4e9da;color:#333c2b;font-size:13px}</style></head>
+<style>body{margin:0;background:#f8f5ee;color:#322c25;font:16px system-ui}main{max-width:900px;margin:auto;padding:24px}img{width:115px}h1{font:38px Georgia}label{display:block;margin:12px 0}input,button{font:inherit;padding:10px;border:1px solid #b8ad9e;border-radius:8px}label input{display:block;margin-top:4px}button{background:#454e3d;color:white}li{padding:12px;background:#fffdf7;margin:6px 0;border-radius:8px}ul{padding:0;list-style:none}.access{display:inline-block;margin-left:10px;padding:3px 8px;border-radius:20px;background:#e4e9da;color:#333c2b;font-size:13px}.desk-form{background:#f1eee5;padding:16px;margin:12px 0;border-radius:10px}select{font:inherit;padding:10px;max-width:100%;border:1px solid #b8ad9e;border-radius:8px}button{cursor:pointer;margin:4px 6px 4px 0}button:disabled{opacity:.65;cursor:default}details{margin:14px 0}summary{cursor:pointer;font-weight:600}label input{max-width:95%}</style></head>
 <body><main><a href="../"><img src="../samah%20celeste.png" alt="Samah Wellness · Inicio"></a><h1>Recepción</h1><p id="status" role="status"></p>
 <form id="login" hidden><label>Correo <input type="email" name="email" autocomplete="username" required></label><label>Contraseña <input type="password" name="password" autocomplete="current-password" required></label><button>Entrar</button></form>
-<section id="panel" hidden><label>Fecha de la clase <input id="day" type="date" required></label><button id="refresh">Actualizar lista</button> <button id="logout">Cerrar sesión</button><ul id="roster"></ul><section aria-labelledby="rewards-title"><h2 id="rewards-title">Samah Rewards</h2>
+<section id="panel" hidden><label>Fecha de la clase <input id="day" type="date" required></label><button id="refresh">Actualizar lista</button> <button id="logout">Cerrar sesión</button><ul id="roster"></ul><section aria-labelledby="desk-total"><h2 id="desk-total">Resumen diario</h2><p id="desk-breakdown"></p><details><summary>Ver cobros directos</summary><ul id="desk-payments"></ul></details><details><summary>Asistencias del día · corregir o deshacer</summary><ul id="desk-day-visits"></ul></details></section><section aria-labelledby="rewards-title"><h2 id="rewards-title">Samah Rewards</h2>
 <button id="rewards-open">Abrir Rewards</button><div id="rewards-panel" hidden>
 <label>Buscar por nombre y apellido <input id="rewards-search" type="search"></label>
 <label>Ficha <select id="rewards-student"></select></label>
@@ -13,7 +13,7 @@
 <label>Hora de clase <input name="starts" type="time" required></label>
 <label>Acceso <select name="channel"><option>Fitpass</option><option>TotalPass</option><option>Clase suelta</option></select></label>
 <button>Confirmar asistencia</button></form>
-<p id="rewards-progress"></p><ul id="rewards-awards"></ul></div><p id="rewards-status" role="status"></p></section><section aria-labelledby="fitpass-title"><h2 id="fitpass-title">Revisar CSV de Fitpass</h2><p>Compara las reservas activas del CSV con las de Samah. La vista previa no guarda ni cancela reservas.</p><label>Archivo CSV <input id="fitpass-file" type="file" accept=".csv,text/csv"></label><p id="fitpass-status" role="status"></p><ul id="fitpass-preview"></ul></section></section></main>
+<p id="rewards-progress"></p><div id="desk-profile"></div><ul id="rewards-awards"></ul></div><p id="rewards-status" role="status"></p></section><section aria-labelledby="fitpass-title"><h2 id="fitpass-title">Revisar CSV de Fitpass</h2><p>Compara las reservas activas del CSV con las de Samah. La vista previa no guarda ni cancela reservas.</p><label>Archivo CSV <input id="fitpass-file" type="file" accept=".csv,text/csv"></label><p id="fitpass-status" role="status"></p><ul id="fitpass-preview"></ul></section></section></main>
 <script>
 const endpoint='https://idbcuvhyhilqeglzkywt.supabase.co';
 const apikey='sb_publishable_YHDLKcV5pd31_V5s940uVA_vnIQqCso';
@@ -55,6 +55,8 @@ async function refresh(){
     const token=await access();
     const rows=await request('/rest/v1/rpc/samah_roster',{p_date:$('day').value},token);
     if(version!==generation)return;
+    await reloadDesk();
+    if(version!==generation)return;
     const active=rows.filter(row=>!row.cancelled);
     for(const row of active){
       const li=document.createElement('li');
@@ -94,7 +96,6 @@ $('logout').onclick=()=>{
   showLogin('Sesión cerrada.');
   if(token)request('/auth/v1/logout?scope=local',{},token).catch(()=>{});
 };
-
 function fitpassRows(csv){
   const rows=[];
   csv=csv.replace(/^\uFEFF/,'').replace(/(?:\r?\n)+$/,'');
@@ -179,6 +180,7 @@ function clearRewards(){
   $('rewards-visit').hidden=true;
   $('rewards-awards').replaceChildren();
   $('rewards-progress').textContent='';
+  $('desk-profile').replaceChildren();
   $('rewards-status').textContent='';
 }
 async function rewards(action,data={}){
@@ -189,7 +191,7 @@ async function rewardAction(action){
   const version=rewardsSession;
   $('rewards-status').textContent='';
   try{await action(()=>version===rewardsSession);}
-  catch{if(version===rewardsSession)$('rewards-status').textContent='No se pudo completar la operación. Revisa la sesión y si la asistencia o el canje ya se registró.';}
+  catch(error){if(version===rewardsSession)$('rewards-status').textContent=error.message||'No se pudo completar la operación.';}
 }
 function rewardOptions(selected=''){
   const search=normalizeName($('rewards-search').value);
@@ -200,36 +202,6 @@ function rewardOptions(selected=''){
     if(key.includes(search))$('rewards-student').add(new Option(name+' · ficha '+row.id.slice(0,8),row.id));
   }
   if(selected)$('rewards-student').value=selected;
-}
-async function showRewards(current){
-  const student=$('rewards-student').value;
-  $('rewards-awards').replaceChildren();
-  $('rewards-progress').textContent='';
-  $('rewards-visit').hidden=true;
-  if(!student)return;
-  const data=await rewards('view',{student});
-  if(!current()||$('rewards-student').value!==student)return;
-  $('rewards-visit').hidden=false;
-  $('rewards-progress').textContent='Visitas de '+data.month.slice(0,7)+' · '+['Fitpass','TotalPass','Clase suelta'].map(channel=>channel+': '+(data.visits[channel]||0)).join(' · ');
-  for(const award of data.awards){
-    const row=document.createElement('li');
-    row.textContent=award.reward+' · ganado en '+award.month.slice(0,7)+' · ';
-    if(award.redeemed_at){
-      row.append('Canjeado el '+new Date(award.redeemed_at).toLocaleDateString('es-MX',{timeZone:'America/Mexico_City'}));
-    }else{
-      row.append('Disponible ');
-      const button=document.createElement('button');
-      button.textContent='Registrar canje';
-      button.onclick=()=>rewardAction(async current=>{
-        if(!confirm('¿Registrar el canje de '+award.reward+'?'))return;
-        button.disabled=true;
-        try{await rewards('redeem',{student,month:award.month,reward:award.reward});if(current())await showRewards(current);}
-        finally{button.disabled=false;}
-      });
-      row.append(button);
-    }
-    $('rewards-awards').append(row);
-  }
 }
 $('rewards-open').onclick=()=>rewardAction(async current=>{
   const rows=await rewards('students');
@@ -278,166 +250,233 @@ $('rewards-visit').onsubmit=event=>{
 };
 
 
-const checkInChannels={'fitpass':'Fitpass','totalpass':'TotalPass','clase suelta':'Clase suelta'};
-const checkInKey='samah-rewards-checkins-v1';
-function recordedCheckIn(id){
-  try{return localStorage.getItem(checkInKey+':'+id);}catch{return null;}
-}
-function showCheckIn(li,row,date){
-  const channel=checkInChannels[normalizeName(row.access)];
-  if(!channel)return;
-  const button=document.createElement('button');
-  button.type='button';
-  button.textContent='Sí asistió';
-  const detail=document.createElement('div');
-  detail.setAttribute('aria-live','polite');
-  function markRecorded(student){
-    button.disabled=true;
-    button.textContent='Asistencia registrada';
-    detail.replaceChildren();
-    const undo=document.createElement('button');
-    undo.type='button';
-    undo.textContent='Deshacer asistencia';
-    async function undoVisit(studentId,person){
-      if(!confirm('¿Deshacer la asistencia de '+person+' del '+date+' a las '+row.starts.slice(0,5)+'?'))return;
-      undo.disabled=true;
-      try{
-        const token=await access();
-        const removed=await request('/rest/v1/rpc/samah_rewards_undo_visit',{
-          p_student:studentId,p_day:date,p_starts:row.starts,p_channel:channel
-        },token);
-        if(!removed)throw Error('No se encontró una asistencia con esa ficha, fecha, hora y acceso.');
-        try{localStorage.removeItem(checkInKey+':'+row.id);}catch{}
-        detail.textContent='Asistencia retirada de Rewards.';
-        button.textContent='Sí asistió';
-        button.disabled=false;
-        if(!$('rewards-panel').hidden)rewardAction(showRewards);
-      }catch(error){
-        message(error);
-        undo.disabled=false;
-      }
-    }
-    undo.onclick=async()=>{
-      if(student!=='1'){await undoVisit(student,row.person);return;}
-      undo.disabled=true;
-      try{
-        const version=generation;
-        const students=await rewards('students');
-        if(version!==generation)return;
-        const form=document.createElement('form');
-        const label=document.createElement('label');
-        label.textContent='Confirma la ficha de la asistencia original ';
-        const select=document.createElement('select');
-        select.required=true;
-        select.add(new Option('Selecciona una ficha',''));
-        const name=normalizeName(row.person);
-        const fullName=s=>s.first_name+' '+s.last_name;
-        students.sort((a,b)=>Number(normalizeName(fullName(b)).includes(name))-Number(normalizeName(fullName(a)).includes(name)));
-        for(const item of students)select.add(new Option(fullName(item)+' · '+item.id.slice(0,8),item.id));
-        label.append(select);
-        const submit=document.createElement('button');
-        submit.textContent='Confirmar ficha y deshacer';
-        form.append(label,submit);
-        form.onsubmit=async event=>{
-          event.preventDefault();
-          submit.disabled=true;
-          try{await undoVisit(select.value,select.selectedOptions[0].textContent);}
-          finally{submit.disabled=false;}
-        };
-        detail.replaceChildren(form);
-      }catch(error){message(error);undo.disabled=false;}
-    };
-    detail.append(undo);
-  }
-  let registering=false;
-  async function register(student){
-    if(registering||recordedCheckIn(row.id))return;
-    registering=true;
-    try{
-      let marker=student;
-      try{
-        await rewards('visit',{student,day:date,starts:row.starts,channel});
-      }catch(error){
-        if(!error.message.startsWith('Ya hay una asistencia para esa alumna'))throw error;
-        marker='1';
-      }
-      try{localStorage.setItem(checkInKey+':'+row.id,marker);}catch{}
-      markRecorded(marker);
-      if(!$('rewards-panel').hidden)rewardAction(showRewards);
-    }finally{registering=false;}
-  }
-  function message(error){
-    detail.append(document.createTextNode(error.message==='Solicitud rechazada'?
-      ' No se pudo registrar. Revisa tu sesión e inténtalo de nuevo.':' '+error.message));
-  }
-  button.onclick=async()=>{
-    button.disabled=true;
-    detail.replaceChildren();
-    try{
-      const rosterGeneration=generation;
-      const students=await rewards('students');
-      if(rosterGeneration!==generation||!session)return;
-      const name=normalizeName(row.person);
-      const exact=students.filter(s=>normalizeName(s.first_name+' '+s.last_name)===name);
-      if(name.includes(' ')&&exact.length===1){await register(exact[0].id);return;}
 
-      const form=document.createElement('form');
-      const label=document.createElement('label');
-      label.textContent='Elige la ficha de Rewards ';
-      const select=document.createElement('select');
-      select.required=true;
-      select.add(new Option('Selecciona una ficha',''));
-      const fullName=s=>s.first_name+' '+s.last_name;
-      const sorted=[...students].sort((a,b)=>Number(normalizeName(fullName(b)).includes(name))-Number(normalizeName(fullName(a)).includes(name)));
-      for(const s of sorted)select.add(new Option(fullName(s)+' · '+s.id.slice(0,8),s.id));
-      label.append(select);
-      const save=document.createElement('button');
-      save.textContent='Registrar en esta ficha';
-      form.append(label,save);
-      form.onsubmit=async event=>{
-        event.preventDefault();
-        save.disabled=true;
-        try{await register(select.value);}catch(error){message(error);save.disabled=false;}
-      };
-      const create=document.createElement('details');
-      const summary=document.createElement('summary');
-      summary.textContent='Crear ficha si es una alumna nueva';
-      const newForm=document.createElement('form');
-      const [first,...last]=row.person.trim().split(/\s+/);
-      for(const [key,title,value] of [['first_name','Nombre',first],['last_name','Apellido',last.join(' ')]]){
-        const field=document.createElement('label');
-        const input=document.createElement('input');
-        input.name=key;input.value=value;input.required=true;input.maxLength=80;
-        field.append(title+' ',input);
-        newForm.append(field);
-      }
-      const createButton=document.createElement('button');
-      createButton.textContent='Crear ficha y registrar asistencia';
-      newForm.append(createButton);
-      let created;
-      newForm.onsubmit=async event=>{
-        event.preventDefault();
-        createButton.disabled=true;
-        try{
-          const data=Object.fromEntries(new FormData(newForm));
-          if(!created){
-            const entered=normalizeName(data.first_name+' '+data.last_name);
-            const currentStudents=await rewards('students');
-            if(currentStudents.some(s=>normalizeName(fullName(s))===entered)&&!confirm('Ya existe una ficha con ese nombre. ¿Es otra persona?'))return;
-            created=await rewards('create',data);
-            for(const input of newForm.querySelectorAll('input'))input.disabled=true;
-          }
-          await register(created);
-        }catch(error){message(error);}finally{createButton.disabled=false;}
-      };
-      create.append(summary,newForm);
-      detail.append(form,create);
-    }catch(error){message(error);}
-    finally{if(button.textContent==='Sí asistió')button.disabled=false;}
+const desk = (action, data = {}) => request('/rest/v1/rpc/samah_desk', {p_action: action, p_data: data}, accessToken);
+let accessToken;
+let dayData = {visits: [], payments: []};
+let profileVersion = 0;
+const prices = {'Clase suelta':150, 'Primera vez':100, 'Paquete 4':580, 'Paquete 9':1250, 'Ilimitado':1800};
+const channels = ['Clase suelta','Primera vez','Paquete 4','Paquete 9','Ilimitado','Fitpass','TotalPass','wellhub','Cortesia'];
+const methods = ['Efectivo','Tarjeta','Transferencia','Mercado Pago'];
+const money = value => new Intl.NumberFormat('es-MX', {style:'currency',currency:'MXN'}).format(Number(value));
+const isPackage = channel => ['Paquete 4','Paquete 9','Ilimitado'].includes(channel);
+const personName = student => student.first_name+' '+(student.last_name==='—'?'':student.last_name);
+const dateLabel = date => date.split('-').reverse().join('/');
+const node = (tag, text) => {const element=document.createElement(tag); if(text!==undefined)element.textContent=text; return element;};
+function field(form, title, name, type='text', value='') {
+  const label=node('label', title);
+  const input=node('input'); input.name=name; input.type=type; input.value=value;
+  label.append(input); form.append(label); return input;
+}
+function choices(form, title, name, values, selected='') {
+  const label=node('label',title), select=node('select'); select.name=name;
+  for(const item of values) {
+    const [value,text]=Array.isArray(item)?item:[item,item];
+    select.add(new Option(text,value));
+  }
+  if(selected)select.value=selected;
+  label.append(select);form.append(label);return select;
+}
+function button(parent,text,action) {
+  const element=node('button',text);element.type='button';element.onclick=action;parent.append(element);return element;
+}
+async function deskAction(parent, action) {
+  const message=node('p');message.setAttribute('role','status');parent.append(message);
+  try {
+    accessToken=await access();
+    await action();
+  } catch(error) {message.textContent=error.message||'No se pudo completar la operación.';}
+}
+async function reloadDesk() {
+  const version=generation,date=$('day').value;
+  accessToken=await access();
+  const data=await desk('day',{day:date});
+  if(version!==generation||date!==$('day').value)return;
+  dayData=data;
+  const total=Number(data.cash)+Number(data.apps);
+  $('desk-total').textContent='Total generado del '+dateLabel(date)+' · '+money(total);
+  $('desk-breakdown').textContent='Cobros capturados: '+money(data.cash)+' · Fitpass y TotalPass sin IVA: '+money(data.apps)+'. Los paquetes se cuentan en su fecha de venta. Wellhub: '+data.wellhub+' asistencias, importe pendiente de balance.'+(data.missing_payments?' Hay '+data.missing_payments+' asistencias directas históricas sin cobro capturado.':'');
+  $('desk-payments').replaceChildren();
+  for(const p of data.payments)$('desk-payments').append(node('li',p.person+' · '+p.concept+' · '+money(p.amount)+' · '+p.method));
+  $('desk-day-visits').replaceChildren();
+  for(const visit of data.visits) {
+    const li=node('li',visit.person+' · '+visit.starts.slice(0,5)+' · '+visit.channel);
+    addVisitActions(li,visit);$('desk-day-visits').append(li);
+  }
+}
+async function afterDeskMutation() {
+  await refresh();
+  if(!$('rewards-panel').hidden)await rewardAction(showRewards);
+}
+function addVisitActions(parent,visit) {
+  button(parent,'Corregir acceso',()=>deskAction(parent,async()=> {
+    const profile=await desk('profile',{student:visit.student});
+    const holder=node('div');parent.append(holder);
+    attendanceForm(holder,visit.student,profile,{visit});
+  }));
+  button(parent,'Deshacer asistencia',()=>deskAction(parent,async()=> {
+    if(!confirm('¿Retirar la asistencia del '+dateLabel(visit.day)+' a las '+visit.starts.slice(0,5)+'? Se ajustarán saldo, premios e ingreso asociado.'))return;
+    await desk('undo',{visit_id:visit.id});
+    await afterDeskMutation();
+  }));
+}
+function attendanceForm(holder,student,profile,{booking,visit}={}) {
+  holder.replaceChildren();
+  const form=node('form');form.className='desk-form';
+  holder.append(form);
+  let currentDay=visit?.day||$('day').value;
+  let currentTime=visit?.starts?.slice(0,5)||booking?.starts?.slice(0,5)||'';
+  if(!booking&&!visit) {
+    field(form,'Fecha de asistencia','day','date',currentDay).required=true;
+    field(form,'Hora de clase','starts','time',currentTime).required=true;
+  } else form.append(node('p',dateLabel(currentDay)+' · '+currentTime));
+  let initial=visit?.channel||booking?.access||'Clase suelta';
+  initial=({'Totalpass':'TotalPass','Wellhub':'wellhub','Paquete Samah':''})[initial]??initial;
+  const channel=choices(form,'Acceso correcto','channel',[['','Selecciona el acceso'],...channels],initial);
+  channel.required=true;
+  const packages=choices(form,'Paquete pagado de esta ficha','package_id',[['','Selecciona un paquete']]);
+  for(const pkg of profile.packages) {
+    const remaining=pkg.plan==='Ilimitado'?'Vence '+dateLabel(pkg.expires_at.slice(0,10)):
+      ((pkg.plan==='Paquete 4'?4:9)-pkg.used)+' disponibles';
+    packages.add(new Option(pkg.plan+' · '+remaining+' · '+pkg.id.slice(0,8),pkg.id));
+  }
+  if(visit?.package_id)packages.value=visit.package_id;
+  const payment=visit?.payment||dayData.payments.find(p=>p.visit_id===visit?.id);
+  const base=visit?prices[visit.channel]||0:0;
+  const extra=field(form,'Extra por taller o actividad (MXN)','extra','number',Math.max(0,Number(payment?.amount||0)-base));
+  extra.min='0';extra.step='0.01';extra.required=true;
+  const method=choices(form,'Método del cobro directo','method',[['','Selecciona si hay cobro'],...methods],payment?.method);
+  field(form,'Actividad o nota','note','text',visit?.note||'');
+  const summary=node('p');form.append(summary);
+  const update=()=> {
+    packages.parentElement.hidden=!isPackage(channel.value);packages.required=isPackage(channel.value);
+    const amount=(channel.value==='Clase suelta'?150:channel.value==='Primera vez'?100:0)+Number(extra.value||0);
+    method.required=amount>0;
+    summary.textContent='Cobro directo de esta visita: '+money(amount)+(isPackage(channel.value)?' · Se descontará una clase del paquete.':'');
   };
-  li.append(' ',button,detail);
-  const marker=recordedCheckIn(row.id);
-  if(marker)markRecorded(marker);
+  channel.onchange=update;extra.oninput=update;update();
+  const submit=node('button',visit?'Guardar corrección':'Confirmar asistencia');form.append(submit);
+  const requestId=crypto.randomUUID();
+  form.onsubmit=async event=> {
+    event.preventDefault();submit.disabled=true;
+    await deskAction(form,async()=> {
+      const data={...Object.fromEntries(new FormData(form)),student,request_id:requestId};
+      if(!data.package_id)delete data.package_id;
+      if(booking)data.booking_id=booking.id;
+      if(visit) {data.visit_id=visit.id;if(!confirm('¿Guardar la corrección y recalcular el ingreso y los premios de esta asistencia?'))return;}
+      await desk(visit?'correct':'attend',data);
+      await afterDeskMutation();
+      holder.replaceChildren(node('p','Guardado.'));
+    });
+    submit.disabled=false;
+  };
+}
+function showCheckIn(li,row,date) {
+  const visit=dayData.visits.find(v=>v.booking_id===row.id);
+  if(visit) {li.append(node('p','Asistencia registrada'));addVisitActions(li,visit);return;}
+  button(li,'Sí asistió',()=>deskAction(li,async()=> {
+    const students=await rewards('students');
+    const holder=node('div');li.append(holder);
+    const exact=students.filter(s=>normalizeName(personName(s))===normalizeName(row.person));
+    if(exact.length===1&&normalizeName(row.person).includes(' ')) {
+      const profile=await desk('profile',{student:exact[0].id});
+      const existing=profile.visits.find(v=>v.day===date&&v.starts.slice(0,5)===row.starts.slice(0,5));
+      if(existing) {holder.append(node('p','Ya hay una asistencia en esta ficha.'));addVisitActions(holder,existing);return;}
+      if(profile.visits.some(v=>v.day===date&&v.starts==='00:00:00')&&!confirm('Hay una asistencia importada del Excel para esta fecha, sin hora. ¿Esta reserva corresponde a otra clase distinta y debe sumar otra visita?'))return;
+      attendanceForm(holder,exact[0].id,profile,{booking:row});return;
+    }
+    const select=choices(holder,'Selecciona la ficha de Rewards','student',[['','Selecciona una ficha'],...students.map(s=>[s.id,personName(s)+' · '+s.id.slice(0,8)])]);
+    button(holder,'Usar ficha',()=>deskAction(holder,async()=> {
+      if(!select.value)throw Error('Selecciona la ficha correcta.');
+      attendanceForm(holder,select.value,await desk('profile',{student:select.value}),{booking:row});
+    }));
+    holder.append(node('p','Si es una persona nueva, créala en Samah Rewards y vuelve a seleccionar su ficha.'));
+  }));
+}
+async function showRewards(current) {
+  const version=++profileVersion,student=$('rewards-student').value;
+  $('rewards-awards').replaceChildren();$('rewards-progress').textContent='';$('desk-profile').replaceChildren();
+  $('rewards-visit').hidden=true;
+  if(!student)return;
+  accessToken=await access();
+  const data=await desk('profile',{student});
+  if(!current()||version!==profileVersion||$('rewards-student').value!==student)return;
+  const month=new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Mexico_City'}).format(new Date()).slice(0,7);
+  const monthVisits=data.visits.filter(v=>v.day.startsWith(month));
+  const counts=new Map();for(const visit of monthVisits)counts.set(visit.channel,(counts.get(visit.channel)||0)+1);
+  $('rewards-progress').textContent='Asistencias de '+month+': '+monthVisits.length+' · '+[...counts].map(([channel,count])=>channel+': '+count).join(' · ');
+  const panel=$('desk-profile');
+  const walk=node('details');walk.append(node('summary','Registrar asistencia sin reserva'));
+  const formHolder=node('div');walk.append(formHolder);attendanceForm(formHolder,student,data);panel.append(walk);
+  const sale=node('details');sale.append(node('summary','Registrar pago de paquete'));
+  const saleForm=node('form');saleForm.className='desk-form';sale.append(saleForm);
+  const purchase=choices(saleForm,'Solicitud de compra web (opcional)','purchase_id',[['','Venta en recepción / sin solicitud']]);
+  const plan=choices(saleForm,'Paquete','channel',[['Paquete 4','4 clases · $580'],['Paquete 9','9 clases · $1,250'],['Ilimitado','Ilimitado · $1,800']]);
+  field(saleForm,'Fecha de pago','day','date',$('day').value).required=true;
+  choices(saleForm,'Método de pago','method',methods);
+  field(saleForm,'Referencia del pago (obligatoria para Mercado Pago)','reference');
+  const opening=choices(saleForm,'Tipo de registro','opening',[['false','Nueva venta · registrar ingreso'],['true','Paquete anterior · solo cargar saldo']]);
+  const openingUsed=field(saleForm,'Clases ya usadas del paquete anterior','opening_used','number','0');openingUsed.min='0';openingUsed.max='9';openingUsed.step='1';
+  openingUsed.parentElement.hidden=true;
+  opening.onchange=()=>{openingUsed.parentElement.hidden=opening.value!=='true';if(opening.value!=='true')openingUsed.value='0';};
+  const saleButton=node('button','Confirmar pago verificado');saleForm.append(saleButton);
+  const saleId=crypto.randomUUID();
+  saleForm.onsubmit=async event=> {
+    event.preventDefault();saleButton.disabled=true;
+    await deskAction(saleForm,async()=> {
+      if(!confirm('¿Confirmar el cobro de '+plan.selectedOptions[0].textContent+' para la ficha seleccionada?'))return;
+      const payload={student,request_id:saleId,...Object.fromEntries(new FormData(saleForm))};
+      if(!payload.purchase_id)delete payload.purchase_id;
+      await desk('sell',payload);await afterDeskMutation();
+    });saleButton.disabled=false;
+  };
+  panel.append(sale);
+  const orders=await desk('requests');
+  if(version!==profileVersion||$('rewards-student').value!==student)return;
+  for(const order of orders)purchase.add(new Option(order.first_name+' '+order.last_name+' · '+order.plan,order.id));
+  purchase.onchange=()=> {const order=orders.find(o=>o.id===purchase.value);if(order)plan.value=order.plan;};
+  panel.append(node('h3','Paquetes de esta ficha'));
+  const packageList=node('ul');
+  for(const pkg of data.packages)packageList.append(node('li',pkg.plan+' · '+pkg.used+' usadas · '+(pkg.plan==='Ilimitado'?'Vence '+dateLabel(pkg.expires_at.slice(0,10)):((pkg.plan==='Paquete 4'?4:9)-pkg.used)+' disponibles')));
+  panel.append(packageList);
+  panel.append(node('h3','Asistencias con fecha'));
+  const history=node('ul');
+  for(const visit of data.visits) {
+    const li=node('li',dateLabel(visit.day)+' · '+(visit.starts==='00:00:00'?'Hora sin registrar en Excel':visit.starts.slice(0,5))+' · '+visit.channel);
+    addVisitActions(li,visit);history.append(li);
+  }
+  panel.append(history);
+  for(const award of data.awards) {
+    const li=node('li',award.reward+' · '+award.month.slice(0,7)+' · ');
+    const cap=award.reward.includes('$200')?200:award.reward.includes('$150')?150:0;
+    if(cap) {
+      const remaining=cap-Number(award.spent);
+      li.append(node('p',money(award.spent)+' usados · '+money(remaining)+' disponibles'));
+      if(remaining>0) {
+        const form=node('form');
+        const amount=field(form,'Importe a canjear (MXN)','amount','number');amount.min='0.01';amount.max=String(remaining);amount.step='0.01';amount.required=true;
+        const submit=node('button','Canjear este importe');form.append(submit);
+        const requestId=crypto.randomUUID();
+        form.onsubmit=async event=> {
+          event.preventDefault();submit.disabled=true;
+          await deskAction(form,async()=> {
+            if(!confirm('¿Canjear '+money(amount.value)+' del crédito?'))return;
+            await desk('credit',{student,month:award.month,reward:award.reward,amount:amount.value,request_id:requestId});
+            await rewardAction(showRewards);
+          });submit.disabled=false;
+        };li.append(form);
+      }
+    } else if(award.redeemed_at)li.append('Canjeado');
+    else button(li,'Registrar canje',()=>deskAction(li,async()=> {
+      if(!confirm('¿Registrar el canje de '+award.reward+'?'))return;
+      await rewards('redeem',{student,month:award.month,reward:award.reward});await rewardAction(showRewards);
+    }));
+    $('rewards-awards').append(li);
+  }
+  if(data.credit_uses.length) {
+    panel.append(node('h3','Historial de uso de créditos'));
+    const uses=node('ul');for(const use of data.credit_uses)uses.append(node('li',new Date(use.used_at).toLocaleString('es-MX',{timeZone:'America/Mexico_City'})+' · '+use.reward+' · '+money(use.amount)));panel.append(uses);
+  }
 }
 
 if(session)refresh();else $('login').hidden=false;
