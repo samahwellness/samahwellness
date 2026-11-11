@@ -58,20 +58,26 @@ async function refresh(){
     await reloadDesk();
     if(version!==generation)return;
     const active=rows.filter(row=>!row.cancelled);
-    for(const row of active){
+    const entries=dayEntries(active,dayData.visits);
+    for(const entry of entries){
       const li=document.createElement('li');
-      li.textContent=row.starts.slice(0,5)+' · '+row.type+' · '+row.person;
-      if(row.access){
-        const badge=document.createElement('span');
-        badge.className='access';
-        badge.textContent=row.access;
-        li.append(badge);
+      const time=entry.starts==='00:00:00'?'Hora sin registrar':entry.starts.slice(0,5);
+      li.textContent=time+' · '+entry.type+' · '+entry.person;
+      const badge=document.createElement('span');
+      badge.className='access';
+      badge.textContent=entry.access;
+      li.append(badge);
+      if(entry.booking){
+        showCheckIn(li,entry.booking,$('day').value,entry.visit);
+      }else{
+        li.append(node('p','Asistencia registrada · registro en Recepción'));
+        addVisitActions(li,entry.visit);
       }
-      showCheckIn(li,row,$('day').value);
       $('roster').append(li);
     }
     $('login').hidden=true;$('panel').hidden=false;
-    $('status').textContent=active.length?active.length+' reservas activas':'Sin reservas activas para este día.';
+    const withoutReservation=entries.filter(entry=>!entry.booking).length;
+    $('status').textContent=active.length+' reservas activas · '+dayData.visits.length+' asistencias registradas'+(withoutReservation?' · '+withoutReservation+' fuera de la lista de reservas':'');
   }catch(error){
     if(version!==generation)return;
     if([400,401,403].includes(error.status))showLogin('Inicia sesión con una cuenta autorizada de Samah.');
@@ -196,7 +202,7 @@ async function rewardAction(action){
 function rewardOptions(selected=''){
   const search=normalizeName($('rewards-search').value);
   $('rewards-student').replaceChildren(new Option('Selecciona una ficha',''));
-  for(const row of rewardStudents){
+  for(const row of sortedStudents(rewardStudents)){
     const name=row.first_name+' '+row.last_name;
     const key=normalizeName(name);
     if(key.includes(search))$('rewards-student').add(new Option(name+' · ficha '+row.id.slice(0,8),row.id));
@@ -379,8 +385,32 @@ function attendanceForm(holder,student,profile,{booking,visit}={}) {
     submit.disabled=false;
   };
 }
-function showCheckIn(li,row,date) {
-  const visit=dayData.visits.find(v=>v.booking_id===row.id);
+
+const nameCollator=new Intl.Collator('es',{sensitivity:'base',numeric:true});
+function sortedStudents(students){
+  return [...students].sort((a,b)=>nameCollator.compare(personName(a),personName(b))||String(a.id).localeCompare(String(b.id)));
+}
+function dayEntries(bookings,visits){
+  const matched=new Set();
+  const entries=bookings.map(booking=>{
+    let visit=visits.find(item=>item.booking_id===booking.id);
+    if(!visit){
+      const candidates=visits.filter(item=>!item.booking_id&&!matched.has(item.id)&&
+        item.starts.slice(0,5)===booking.starts.slice(0,5)&&
+        normalizeName(item.person)===normalizeName(booking.person));
+      if(candidates.length===1)visit=candidates[0];
+    }
+    if(visit)matched.add(visit.id);
+    return {booking,visit,starts:booking.starts,type:booking.type,person:booking.person,access:visit?.channel||booking.access};
+  });
+  for(const visit of visits){
+    if(!matched.has(visit.id))entries.push({visit,starts:visit.starts,type:'Registro en Recepción',person:visit.person,access:visit.channel});
+  }
+  return entries.sort((a,b)=>a.starts.localeCompare(b.starts)||nameCollator.compare(a.person,b.person));
+}
+
+function showCheckIn(li,row,date,registeredVisit) {
+  const visit=registeredVisit||dayData.visits.find(v=>v.booking_id===row.id);
   if(visit) {li.append(node('p','Asistencia registrada'));addVisitActions(li,visit);return;}
   button(li,'Sí asistió',()=>deskAction(li,async()=> {
     const students=await rewards('students');
@@ -393,7 +423,7 @@ function showCheckIn(li,row,date) {
       if(profile.visits.some(v=>v.day===date&&v.starts==='00:00:00')&&!confirm('Hay una asistencia importada del Excel para esta fecha, sin hora. ¿Esta reserva corresponde a otra clase distinta y debe sumar otra visita?'))return;
       attendanceForm(holder,exact[0].id,profile,{booking:row});return;
     }
-    const select=choices(holder,'Selecciona la ficha de Rewards','student',[['','Selecciona una ficha'],...students.map(s=>[s.id,personName(s)+' · '+s.id.slice(0,8)])]);
+    const select=choices(holder,'Selecciona la ficha de Rewards','student',[['','Selecciona una ficha'],...sortedStudents(students).map(s=>[s.id,personName(s)+' · '+s.id.slice(0,8)])]);
     button(holder,'Usar ficha',()=>deskAction(holder,async()=> {
       if(!select.value)throw Error('Selecciona la ficha correcta.');
       attendanceForm(holder,select.value,await desk('profile',{student:select.value}),{booking:row});
