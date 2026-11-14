@@ -341,12 +341,26 @@ function attendanceForm(holder,student,profile,{booking,visit}={}) {
   const channel=choices(form,'Acceso correcto','channel',[['','Selecciona el acceso'],...channels],initial);
   channel.required=true;
   const packages=choices(form,'Paquete pagado de esta ficha','package_id',[['','Selecciona un paquete']]);
-  for(const pkg of profile.packages) {
-    const remaining=pkg.plan==='Ilimitado'?'Vence '+dateLabel(pkg.expires_at.slice(0,10)):
-      ((pkg.plan==='Paquete 4'?4:9)-pkg.used)+' disponibles';
-    packages.add(new Option(pkg.plan+' · '+remaining+' · '+pkg.id.slice(0,8),pkg.id));
-  }
-  if(visit?.package_id)packages.value=visit.package_id;
+  const packageNotice=node('p');packages.parentElement.append(packageNotice);
+  const availablePackages=Array.isArray(profile.packages)?profile.packages:[];
+  const showPackages=()=>{
+    const plan=channel.value,previous=packages.value;
+    packages.replaceChildren(new Option('Selecciona un paquete',''));
+    const matching=availablePackages.filter(pkg=>pkg.plan===plan&&
+      (plan==='Ilimitado'?(!pkg.expires_at||pkg.expires_at.slice(0,10)>=currentDay):
+        Number(pkg.used)<(plan==='Paquete 4'?4:9)));
+    for(const pkg of matching) {
+      const remaining=pkg.plan==='Ilimitado'?'Vence '+dateLabel(pkg.expires_at.slice(0,10)):
+        ((pkg.plan==='Paquete 4'?4:9)-Number(pkg.used))+' disponibles';
+      packages.add(new Option(pkg.plan+' · '+remaining+' · '+pkg.id.slice(0,8),pkg.id));
+    }
+    const preferred=visit?.package_id||previous;
+    if(matching.some(pkg=>pkg.id===preferred))packages.value=preferred;
+    else if(matching.length===1)packages.value=matching[0].id;
+    packageNotice.textContent=!isPackage(plan)?'':
+      matching.length?'Paquete disponible: '+packages.selectedOptions[0].textContent:
+      'No aparece un paquete disponible de este tipo en esta ficha. Revisa la ficha en Rewards; no registres un cobro nuevo.';
+  };
   const payment=visit?.payment||dayData.payments.find(p=>p.visit_id===visit?.id);
   const base=visit?prices[visit.channel]||0:0;
   const extra=field(form,'Extra por taller o actividad (MXN)','extra','number',Math.max(0,Number(payment?.amount||0)-base));
@@ -359,7 +373,7 @@ function attendanceForm(holder,student,profile,{booking,visit}={}) {
     packages.parentElement.hidden=!usesPackage;
     packages.required=usesPackage;
     packages.disabled=!usesPackage;
-    if(!usesPackage)packages.value='';
+    showPackages();
     const amount=(channel.value==='Clase suelta'?150:channel.value==='Primera vez'?100:0)+Number(extra.value||0);
     const hasDirectPayment=amount>0;
     method.required=hasDirectPayment;
@@ -375,6 +389,7 @@ function attendanceForm(holder,student,profile,{booking,visit}={}) {
     event.preventDefault();submit.disabled=true;
     await deskAction(form,async()=> {
       const data={...Object.fromEntries(new FormData(form)),student,request_id:requestId};
+      if(isPackage(data.channel)&&!data.package_id)throw Error('Selecciona un paquete disponible antes de confirmar.');
       if(!data.package_id)delete data.package_id;
       if(booking)data.booking_id=booking.id;
       if(visit) {data.visit_id=visit.id;if(!confirm('¿Guardar la corrección y recalcular el ingreso y los premios de esta asistencia?'))return;}
