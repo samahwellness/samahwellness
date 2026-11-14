@@ -359,7 +359,12 @@ function attendanceForm(holder,student,profile,{booking,visit}={}) {
     else if(matching.length===1)packages.value=matching[0].id;
     packageNotice.textContent=!isPackage(plan)?'':
       matching.length?'Paquete disponible: '+packages.selectedOptions[0].textContent:
-      'No aparece un paquete disponible de este tipo en esta ficha. Revisa la ficha en Rewards; no registres un cobro nuevo.';
+      availablePackages.length?
+        'No hay paquetes vigentes de '+plan+' para usar en Recepción. Paquetes devueltos: '+
+        availablePackages.map(pkg=>pkg.plan+' ('+Number(pkg.used)+' usadas'+
+          (pkg.expires_at?', vence '+pkg.expires_at.slice(0,10):'')+')').join('; ')+
+        '. No registres un nuevo cobro.':
+        'Esta ficha tiene historial de Rewards, pero Recepción no recibió ningún paquete pagado utilizable. Hay que revisar su registro de paquetes en Supabase; no registres un nuevo cobro.';
   };
   const payment=visit?.payment||dayData.payments.find(p=>p.visit_id===visit?.id);
   const base=visit?prices[visit.channel]||0:0;
