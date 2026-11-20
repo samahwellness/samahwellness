@@ -59,7 +59,14 @@ async function refresh(){
   try{
     const rows=await rpc('agenda',{p_date:date});
     if(version!==revision)return;
-    data.schedule=rows.map(row=>({...fromServer(row),day:weekday(date)}));
+    const day=weekday(date);
+    const reducedSaturdaySchedule=date>='2026-11-21' && day===5;
+    data.schedule=rows.map(fromServer)
+      .filter(cls=>!(reducedSaturdaySchedule && (
+        (cls.time==='07:00' && cls.type==='Yoga Vinyasa') ||
+        (cls.time==='10:15' && cls.type==='Sculpt')
+      )))
+      .map(cls=>({...cls,day}));
     $('connection').textContent='';
     render();
   }catch{
